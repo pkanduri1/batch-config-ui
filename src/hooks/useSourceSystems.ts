@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { SourceSystem, JobConfig, SourceField } from '../types/configuration';
 import { configApi } from '../services/api/configApi';
+import { mockSourceSystems, mockSourceFields } from '../data/mockData';
+
 
 export interface UseSourceSystemsReturn {
   // State
@@ -95,9 +97,13 @@ export const useSourceSystems = (
         }));
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load source systems';
-      setError(errorMessage);
-      console.error('Failed to load source systems:', err);
+        console.warn('API failed, using mock source fields:', err);
+        setSourceSystems(mockSourceSystems);
+        setError(null);
+      //const errorMessage = err instanceof Error ? err.message : 'Failed to load source systems';
+      //setError(errorMessage);
+      //console.error('Failed to load source systems:', err);
+      
     } finally {
       setIsLoading(false);
     }
@@ -161,9 +167,12 @@ export const useSourceSystems = (
         }));
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load source fields';
-      setError(errorMessage);
-      console.error('Failed to load source fields:', err);
+      //const errorMessage = err instanceof Error ? err.message : 'Failed to load source fields';
+     // setError(errorMessage);
+      //console.error('Failed to load source fields:', err);
+      console.warn('Using mock source fields:', err);
+      setSourceFields(mockSourceFields);
+      setError(null);
     } finally {
       setIsLoading(false);
     }
