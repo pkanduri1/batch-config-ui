@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { SourceSystem, JobConfig, SourceField } from '@/types/configuration';
-import { configApi } from '@/services/api/configApi';
+import { SourceSystem, JobConfig, SourceField } from '../types/configuration';
+import { configApi } from '../services/api/configApi';
 
 export interface UseSourceSystemsReturn {
   // State

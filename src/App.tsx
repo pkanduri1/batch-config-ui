@@ -5,6 +5,9 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { createTheme } from '@mui/material/styles';
 import { Container, Typography, Box, Card, CardContent, Button } from '@mui/material';
 import { Build, Code, Visibility } from '@mui/icons-material';
+import { ConfigurationProvider } from './contexts/ConfigurationContext';
+import { AppThemeProvider } from './contexts/ThemeContext';
+import { ContextTest } from './contexts/ContextTest';
 
 const theme = createTheme({
   palette: {
@@ -25,10 +28,11 @@ const theme = createTheme({
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
+    <AppThemeProvider>
+      <ConfigurationProvider>
       <CssBaseline />
       <Router>
-        <Container maxWidth="lg">
+        <Container maxWidth="lg" >
           <Box sx={{ my: 4 }}>
             <Typography variant="h3" component="h1" gutterBottom align="center">
               🔄 Batch Configuration Tool
@@ -88,9 +92,11 @@ function App() {
               </Typography>
             </Box>
           </Box>
+          <ContextTest />
         </Container>
       </Router>
-    </ThemeProvider>
+      </ConfigurationProvider>
+    </AppThemeProvider>
   );
 }
 

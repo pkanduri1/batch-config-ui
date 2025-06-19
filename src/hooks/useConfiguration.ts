@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Configuration, FieldMapping, TransactionType } from '@/types/configuration';
-import { configApi } from '@/services/api/configApi';
+import { configApi } from '../services/api/configApi';
+import { Configuration, FieldMapping, TransactionType } from '../types/configuration';
 import { useTypeRegistry } from './useTypeRegistry';
 
 export interface UseConfigurationReturn {

@@ -6,7 +6,7 @@ import {
   SourceSystemTypeDefinition,
   DataTypeDefinition,
   TransformationTypeDefinition
-} from '@/types/configuration';
+} from '../types/configuration';
 
 // Import the actual API - you'll need to create this file
 // import { typeRegistryApi } from '@/services/api/typeRegistryApi';

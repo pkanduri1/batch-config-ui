@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Configuration, ValidationResult, FieldMapping, ValidationError } from '@/types/configuration';
-import { configApi } from '@/services/api/configApi';
+import { configApi } from '../services/api/configApi';
 
 export interface UseValidationReturn {
   // State
