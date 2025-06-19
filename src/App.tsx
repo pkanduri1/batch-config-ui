@@ -9,6 +9,7 @@ import { ConfigurationProvider } from './contexts/ConfigurationContext';
 import { AppThemeProvider } from './contexts/ThemeContext';
 import { ContextTest } from './contexts/ContextTest';
 import { HomePage } from './pages/HomePage';
+import { PageLayout } from './components/layout/PageLayout';
 
 const theme = createTheme({
   palette: {
@@ -31,8 +32,10 @@ function App() {
   return (
     <AppThemeProvider>
       <ConfigurationProvider>
+        <PageLayout>
       <HomePage />
       <ContextTest />
+      </PageLayout>
       </ConfigurationProvider>
     </AppThemeProvider>
   );

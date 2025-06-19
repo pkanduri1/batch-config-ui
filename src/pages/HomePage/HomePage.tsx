@@ -59,7 +59,7 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Box  sx={{ p: 4 }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" component="h1" gutterBottom>
@@ -333,6 +333,6 @@ export const HomePage: React.FC = () => {
           </Grid>
         </Grid>
       )}
-    </Container>
+    </Box>
   );
 };
