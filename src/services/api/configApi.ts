@@ -74,13 +74,101 @@ export const configApi = {
   },
 
   // Field Mappings
+  // src/services/api/configApi.ts - Updated getFieldMappings with mock fallback
+// Replace the existing getFieldMappings function with this version:
+
+  // Field Mappings
   getFieldMappings: async (sourceSystem: string, jobName: string): Promise<Configuration[]> => {
     try {
       const response = await axios.get<Configuration[]>(`${API_BASE_URL}/mappings/${sourceSystem}/${jobName}`);
       return response.data;
     } catch (error) {
-      console.error(`Failed to fetch mappings for ${sourceSystem}.${jobName}:`, error);
-      throw new Error(`Failed to load mappings for ${sourceSystem}.${jobName}`);
+      console.warn('API failed, using mock configuration:', error);
+      
+      // Mock configuration fallback
+      const mockConfiguration: Configuration = {
+        fileType: 'p327',
+        transactionType: '200',
+        sourceSystem,
+        jobName,
+        fieldMappings: [
+          {
+            id: 'field_1',
+            fieldName: 'emp_id',
+            value: undefined,
+            sourceField: 'employee_id',
+            targetField: 'EMPLOYEE_ID',
+            length: 10,
+            pad: 'right',
+            padChar: ' ',
+            sources: undefined,
+            transform: '',
+            delimiter: undefined,
+            format: '',
+            sourceFormat: undefined,
+            targetFormat: undefined,
+            transformationType: 'source',
+            conditions: [],
+            targetPosition: 1,
+            dataType: 'string',
+            defaultValue: ''
+          },
+          {
+            id: 'field_2',
+            fieldName: 'location-code',
+            value: undefined,
+            sourceField: '',
+            targetField: 'LOCATION-CODE',
+            length: 6,
+            pad: 'right',
+            padChar: ' ',
+            sources: undefined,
+            transform: '',
+            delimiter: undefined,
+            format: '',
+            sourceFormat: undefined,
+            targetFormat: undefined,
+            transformationType: 'constant',
+            conditions: [{
+              ifExpr: '',
+              then: undefined,
+              elseExpr: undefined,
+              elseIfExprs: undefined
+            }],
+            targetPosition: 2,
+            dataType: 'string',
+            defaultValue: '100020'
+          },
+          {
+            id: 'field_3',
+            fieldName: 'full_name',
+            value: undefined,
+            sourceField: '',
+            targetField: 'FULL_NAME',
+            length: 50,
+            pad: 'right',
+            padChar: ' ',
+            sources: [
+              { field: 'first_name' },
+              { field: 'last_name' }
+            ],
+            transform: 'concat',
+            delimiter: ' ',
+            format: '',
+            sourceFormat: undefined,
+            targetFormat: undefined,
+            transformationType: 'composite',
+            conditions: [],
+            targetPosition: 3,
+            dataType: 'string',
+            defaultValue: ''
+          }
+        ],
+        fields: {},
+        availableTransactionTypes: ['200', '900', 'default']
+      };
+      
+      return [mockConfiguration];
     }
   },
 
