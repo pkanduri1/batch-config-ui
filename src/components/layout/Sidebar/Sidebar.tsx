@@ -1,5 +1,6 @@
 // src/components/layout/Sidebar/Sidebar.tsx
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Drawer,
   List,
@@ -35,6 +36,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const {
     sourceSystems,
     selectedSourceSystem,
@@ -64,13 +67,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
     }
   };
 
-  const handleJobSelect = async (jobName: string) => {
+  const handleJobSelect = async (systemId: string, jobName: string) => {
     try {
       await selectJob(jobName);
+      navigate(`/configuration/${systemId}/${jobName}`);
     } catch (error) {
       console.error('Failed to select job:', error);
     }
   };
+
+  const navigationItems = [
+    { path: '/dashboard', label: 'Dashboard', icon: <Dashboard /> },
+    { path: '/configuration', label: 'Configuration', icon: <Settings /> },
+    { path: '/yaml-preview', label: 'YAML Preview', icon: <Code /> },
+    { path: '/testing', label: 'Testing', icon: <PlayArrow /> }
+  ];
 
   const drawer = (
     <Box sx={{ overflow: 'auto', height: '100%' }}>
@@ -88,33 +99,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
 
       {/* Main Navigation */}
       <List>
-        <ListItemButton>
-          <ListItemIcon>
-            <Dashboard />
-          </ListItemIcon>
-          <ListItemText primary="Dashboard" />
-        </ListItemButton>
-        
-        <ListItemButton disabled>
-          <ListItemIcon>
-            <Settings />
-          </ListItemIcon>
-          <ListItemText primary="Configuration" />
-        </ListItemButton>
-        
-        <ListItemButton disabled>
-          <ListItemIcon>
-            <Code />
-          </ListItemIcon>
-          <ListItemText primary="YAML Preview" />
-        </ListItemButton>
-        
-        <ListItemButton disabled>
-          <ListItemIcon>
-            <PlayArrow />
-          </ListItemIcon>
-          <ListItemText primary="Testing" />
-        </ListItemButton>
+        {navigationItems.map((item) => (
+          <ListItemButton
+            key={item.path}
+            selected={location.pathname === item.path}
+            onClick={() => navigate(item.path)}
+          >
+            <ListItemIcon>
+              {item.icon}
+            </ListItemIcon>
+            <ListItemText primary={item.label} />
+          </ListItemButton>
+        ))}
       </List>
 
       <Divider />
@@ -184,7 +180,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
                       key={job.name}
                       sx={{ pl: 4 }}
                       selected={selectedJob?.name === job.name}
-                      onClick={() => handleJobSelect(job.name)}
+                      onClick={() => handleJobSelect(system.id, job.name)}
                     >
                       <ListItemIcon>
                         <Work sx={{ fontSize: 16 }} />
@@ -245,7 +241,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
   );
 
   return (
-   // In Sidebar.tsx, replace the Drawer with:
+    // Replace the single Drawer with:
 <>
   {/* Mobile Drawer */}
   <Drawer

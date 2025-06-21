@@ -1,5 +1,6 @@
 import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter, BrowserRouter as Router } from 'react-router-dom';
+import { AppRouter } from './router/AppRouter';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { createTheme } from '@mui/material/styles';
@@ -32,10 +33,9 @@ function App() {
   return (
     <AppThemeProvider>
       <ConfigurationProvider>
-        <PageLayout>
-      <HomePage />
-      <ContextTest />
-      </PageLayout>
+       <BrowserRouter>
+          <AppRouter />
+        </BrowserRouter>
       </ConfigurationProvider>
     </AppThemeProvider>
   );
