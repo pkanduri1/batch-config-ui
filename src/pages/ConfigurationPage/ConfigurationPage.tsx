@@ -28,192 +28,158 @@ const ConfigurationPage: React.FC = () => {
     sourceFields 
   } = useSourceSystemsState();
   
-  const { isLoading, error } = useConfigurationContext();
+  const { 
+    isLoading, 
+    error, 
+    addFieldMapping,
+    fieldMappings,
+    reorderFieldMappings 
+  } = useConfigurationContext();
+  
   const [selectedMapping, setSelectedMapping] = React.useState<FieldMapping | null>(null);
 
-  // Handle field drag from source list to mapping area
-  const handleFieldDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-    
-    const { source, destination } = result;
-    
-    // Handle reordering within mapping area
-    if (source.droppableId === 'mapping-area' && destination.droppableId === 'mapping-area') {
-      // This will be handled by MappingArea's onDragEnd
-      return;
-    }
-    
-    // Handle dropping source field into mapping area (create new mapping)
-    if (source.droppableId === 'source-fields' && destination.droppableId === 'mapping-area') {
-      const draggedField = sourceFields[source.index];
-      console.log('Creating mapping for field:', draggedField);
-      // TODO: Add field mapping creation logic
-    }
-  };
-
-  // Auto-select system and job based on URL params
+  // Load system and job on mount
   useEffect(() => {
-    if (systemId && sourceSystems.length > 0) {
+    if (systemId && !selectedSourceSystem) {
       const system = sourceSystems.find(s => s.id === systemId);
-      if (system && system.id !== selectedSourceSystem?.id) {
-        selectSourceSystem(systemId);
+      if (system) {
+        selectSourceSystem(system.id);
       }
     }
-  }, [systemId, sourceSystems, selectedSourceSystem, selectSourceSystem]);
+  }, [systemId, selectedSourceSystem, sourceSystems, selectSourceSystem]);
 
   useEffect(() => {
-    if (jobName && selectedSourceSystem) {
-      const job = selectedSourceSystem.jobs.find(j => j.name === jobName);
-      if (job && job.name !== selectedJob?.name) {
+    if (jobName && selectedSourceSystem && !selectedJob) {
+      const job = selectedSourceSystem.jobs.find(j => j.jobName === jobName);
+      if (job) {
         selectJob(jobName);
       }
     }
   }, [jobName, selectedSourceSystem, selectedJob, selectJob]);
 
-  // Loading state
+  // Handle all drag and drop operations
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) {
+      console.log('No destination, drag cancelled');
+      return;
+    }
+    
+    const { source, destination } = result;
+    console.log('Drag ended:', { source, destination });
+    
+    // Handle reordering within mapping area
+    if (source.droppableId === 'mapping-area' && destination.droppableId === 'mapping-area') {
+      console.log('Reordering mappings:', source.index, '→', destination.index);
+      reorderFieldMappings(source.index, destination.index);
+      return;
+    }
+    
+    // Handle dropping source field into mapping area (create new mapping)
+    if (source.droppableId === 'source-fields' && destination.droppableId === 'mapping-area') {
+      const draggedFieldName = result.draggableId;
+      const sourceField = sourceFields.find(field => field.name === draggedFieldName);
+      
+      if (sourceField) {
+        console.log('Creating new mapping for field:', sourceField.name);
+        
+        // Create a new field mapping
+        const newMapping: Omit<FieldMapping, 'id'> = {
+          fieldName: sourceField.name,
+          sourceField: sourceField.name,
+          targetField: sourceField.name,
+          targetPosition: fieldMappings.length + 1,
+          length: sourceField.maxLength || 10,
+          dataType: sourceField.dataType,
+          transformationType: 'source',
+          transactionType: 'default'
+        };
+        
+        addFieldMapping(newMapping);
+        
+        // Select the new mapping for editing
+        setTimeout(() => {
+          const newMappingWithId = fieldMappings.find(m => m.sourceField === sourceField.name);
+          if (newMappingWithId) {
+            setSelectedMapping(newMappingWithId);
+          }
+        }, 100);
+      }
+    }
+  };
+
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
         <CircularProgress />
       </Box>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">
-          Error loading configuration: {error}
-        </Alert>
+      <Box sx={{ p: 2 }}>
+        <Alert severity="error">{error}</Alert>
       </Box>
     );
   }
 
-  // No selection state
   if (!selectedSourceSystem || !selectedJob) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Field Configuration
-        </Typography>
+      <Box sx={{ p: 2 }}>
         <Alert severity="info">
-          Select a source system and job from the sidebar to configure field mappings
+          Select a source system and job to begin configuration
         </Alert>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Header Section */}
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Typography variant="h4" gutterBottom>
-          Field Configuration
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <Chip 
-            label={selectedSourceSystem.name} 
-            color="primary" 
-            variant="outlined" 
-            size="small"
-          />
-          <Typography variant="body2" color="text.secondary">•</Typography>
-          <Chip 
-            label={selectedJob.name} 
-            color="secondary" 
-            variant="outlined" 
-            size="small"
-          />
-          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-            {sourceFields.length} source fields available
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <Typography variant="h5" gutterBottom>
+            Configuration: {selectedSourceSystem.name} - {selectedJob.jobName}
           </Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Chip label={selectedSourceSystem.systemType} size="small" />
+            <Chip label={`${sourceFields.length} source fields`} size="small" variant="outlined" />
+            <Chip label={`${fieldMappings.length} mappings`} size="small" variant="outlined" />
+          </Box>
         </Box>
-      </Box>
 
-      {/* 3-Panel Interface */}
-      <DragDropContext onDragEnd={handleFieldDragEnd}>
-        <Box sx={{ 
-          flex: 1, 
-          display: 'flex', 
-          overflow: 'hidden',
-          gap: 1,
-          p: 1
-        }}>
+        {/* 3-Panel Layout */}
+        <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           {/* Left Panel - Source Fields */}
-          <Paper 
-            elevation={1} 
-            sx={{ 
-              width: '300px', 
-              minWidth: '300px',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden'
-            }}
-          >
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-              <Typography variant="h6">Source Fields</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Drag fields to create mappings
-              </Typography>
-            </Box>
-            <Box sx={{ flex: 1, overflow: 'auto', p: 1 }}>
-              <SourceFieldList 
-                sourceFields={sourceFields} 
-              />
-            </Box>
+          <Paper sx={{ width: '300px', display: 'flex', flexDirection: 'column' }}>
+            <SourceFieldList sourceFields={[]} />
           </Paper>
 
-          {/* Center Panel - Mapping Area */}
-          <Paper 
-            elevation={1} 
-            sx={{ 
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              minWidth: '400px'
-            }}
-          >
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-              <Typography variant="h6">Field Mappings</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Configure target field mappings
-              </Typography>
-            </Box>
-            <Box sx={{ flex: 1, overflow: 'auto' }}>
-              <MappingArea onMappingSelect={setSelectedMapping} />
-            </Box>
-          </Paper>
+          <Divider orientation="vertical" flexItem />
+
+          {/* Center Panel - Field Mappings */}
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <MappingArea onMappingSelect={setSelectedMapping} />
+          </Box>
+
+          <Divider orientation="vertical" flexItem />
 
           {/* Right Panel - Field Configuration */}
-          <Paper 
-            elevation={1} 
-            sx={{ 
-              width: '350px', 
-              minWidth: '350px',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden'
-            }}
-          >
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-              <Typography variant="h6">Field Configuration</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Edit mapping properties
-              </Typography>
-            </Box>
-            <Box sx={{ flex: 1, overflow: 'auto' }}>
-              <FieldConfig 
-                selectedMapping={selectedMapping}
-                onClose={() => setSelectedMapping(null)}
-              />
-            </Box>
+          <Paper sx={{ width: '400px', display: 'flex', flexDirection: 'column' }}>
+            <FieldConfig 
+              selectedMapping={selectedMapping}
+              onClose={() => setSelectedMapping(null)}
+              onSave={(mapping) => {
+                console.log('Saving mapping:', mapping);
+                // The save will be handled by the FieldConfig component
+                setSelectedMapping(null);
+              }}
+            />
           </Paper>
         </Box>
-      </DragDropContext>
-    </Box>
+      </Box>
+    </DragDropContext>
   );
 };
 
-export { ConfigurationPage };
+export default ConfigurationPage;

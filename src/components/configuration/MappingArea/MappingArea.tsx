@@ -2,225 +2,36 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Paper,
   Typography,
   IconButton,
+  List,
+  ListItem,
+  Paper,
   Chip,
-  Alert,
   Menu,
   MenuItem,
   Tooltip,
-  List,
-  ListItem,
-  Divider
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Grid,
+  FormControl,
+  InputLabel,
+  Select
 } from '@mui/material';
 import {
-  DragIndicator,
+  Add,
   Edit,
   Delete,
   MoreVert,
-  Add,
-  Warning,
-  CheckCircle
+  DragIndicator
 } from '@mui/icons-material';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { FieldMapping } from '../../../types/configuration';
-import { useConfigurationContext } from '../../../contexts/ConfigurationContext';
-
-interface MappingItemProps {
-  mapping: FieldMapping;
-  index: number;
-  onEdit: (mapping: FieldMapping) => void;
-  onDelete: (id: string) => void;
-  isDragging?: boolean;
-}
-
-const MappingItem: React.FC<MappingItemProps> = ({ 
-  mapping, 
-  index, 
-  onEdit, 
-  onDelete, 
-  isDragging 
-}) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleEdit = () => {
-    onEdit(mapping);
-    handleMenuClose();
-  };
-
-  const handleDelete = () => {
-    if (mapping.id) {
-      onDelete(mapping.id);
-    }
-    handleMenuClose();
-  };
-
-  const getTransformationTypeColor = (type: string) => {
-    switch (type) {
-      case 'source': return 'primary';
-      case 'constant': return 'success';
-      case 'composite': return 'warning';
-      case 'conditional': return 'error';
-      default: return 'default';
-    }
-  };
-
-  const getTransformationIcon = (type: string) => {
-    switch (type) {
-      case 'source': return '→';
-      case 'constant': return '📌';
-      case 'composite': return '⚡';
-      case 'conditional': return '🔀';
-      default: return '?';
-    }
-  };
-
-  return (
-    <Paper
-      elevation={isDragging ? 8 : 1}
-      sx={{
-        p: 2,
-        mb: 1,
-        cursor: 'pointer',
-        border: 1,
-        borderColor: isDragging ? 'primary.main' : 'divider',
-        backgroundColor: isDragging ? 'action.selected' : 'background.paper',
-        transform: isDragging ? 'rotate(1deg)' : 'none',
-        transition: 'all 0.2s ease',
-        '&:hover': {
-          backgroundColor: 'action.hover',
-          borderColor: 'primary.light'
-        }
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-        <DragIndicator 
-          sx={{ 
-            color: 'text.secondary', 
-            cursor: 'grab',
-            mt: 0.5
-          }} 
-        />
-        
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          {/* Header Row */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Chip
-                label={mapping.targetPosition}
-                size="small"
-                color="primary"
-                variant="filled"
-                sx={{ minWidth: '32px', fontWeight: 'bold' }}
-              />
-              <Typography variant="body2" fontWeight="medium">
-                {mapping.targetField}
-              </Typography>
-            </Box>
-            
-            <IconButton size="small" onClick={handleMenuClick}>
-              <MoreVert fontSize="small" />
-            </IconButton>
-          </Box>
-
-          {/* Mapping Details */}
-          <Box sx={{ display: 'flex', flex: 1, gap: 2, alignItems: 'center', mb: 1 }}>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="caption" color="text.secondary" display="block">
-                Source
-              </Typography>
-              <Typography variant="body2">
-                {mapping.transformationType === 'source' && mapping.sourceField
-                  ? mapping.sourceField
-                  : mapping.transformationType === 'constant' && mapping.defaultValue
-                  ? `"${mapping.defaultValue}"`
-                  : mapping.transformationType === 'composite' && mapping.sources
-                  ? `${mapping.sources.map(s => s.field).join(' + ')}`
-                  : 'Not configured'
-                }
-              </Typography>
-            </Box>
-            
-            <Box sx={{ textAlign: 'center', px: 1 }}>
-              <Typography variant="h6">
-                {getTransformationIcon(mapping.transformationType)}
-              </Typography>
-            </Box>
-            
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="caption" color="text.secondary" display="block">
-                Target ({mapping.length} chars)
-              </Typography>
-              <Typography variant="body2">
-                {mapping.targetField}
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Tags Row */}
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Chip
-              label={mapping.transformationType}
-              size="small"
-              color={getTransformationTypeColor(mapping.transformationType) as any}
-              variant="outlined"
-            />
-            <Chip
-              label={mapping.dataType}
-              size="small"
-              variant="outlined"
-              color="default"
-            />
-            {mapping.pad && (
-              <Chip
-                label={`Pad ${mapping.pad}`}
-                size="small"
-                variant="outlined"
-                color="info"
-              />
-            )}
-            {mapping.conditions && mapping.conditions.length > 0 && (
-              <Chip
-                label="Conditional"
-                size="small"
-                variant="outlined"
-                color="warning"
-              />
-            )}
-          </Box>
-        </Box>
-      </Box>
-
-      {/* Actions Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <MenuItem onClick={handleEdit}>
-          <Edit fontSize="small" sx={{ mr: 1 }} />
-          Edit Mapping
-        </MenuItem>
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <Delete fontSize="small" sx={{ mr: 1 }} />
-          Delete Mapping
-        </MenuItem>
-      </Menu>
-    </Paper>
-  );
-};
+import { useConfigurationContext, useSourceSystemsState } from '../../../contexts/ConfigurationContext';
 
 interface MappingAreaProps {
   onMappingSelect?: (mapping: FieldMapping) => void;
@@ -235,7 +46,18 @@ export const MappingArea: React.FC<MappingAreaProps> = ({ onMappingSelect }) => 
     addFieldMapping 
   } = useConfigurationContext();
 
+  const { sourceFields } = useSourceSystemsState();
+  
   const [selectedMapping, setSelectedMapping] = useState<FieldMapping | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newMappingData, setNewMappingData] = useState({
+    fieldName: '',
+    targetField: '',
+    sourceField: '',
+    length: 10,
+    dataType: 'string' as const,
+    transformationType: 'source' as const
+  });
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -246,8 +68,6 @@ export const MappingArea: React.FC<MappingAreaProps> = ({ onMappingSelect }) => 
     if (source.droppableId === 'mapping-area' && destination.droppableId === 'mapping-area') {
       reorderFieldMappings(source.index, destination.index);
     }
-    
-    // Handle dropping from source fields (handled by parent ConfigurationPage)
   };
 
   const handleEditMapping = (mapping: FieldMapping) => {
@@ -264,8 +84,60 @@ export const MappingArea: React.FC<MappingAreaProps> = ({ onMappingSelect }) => 
   };
 
   const handleCreateMapping = () => {
-    // TODO: Open creation dialog
-    console.log('Create new mapping');
+    setShowAddDialog(true);
+  };
+
+  const handleAddDialogClose = () => {
+    setShowAddDialog(false);
+    setNewMappingData({
+      fieldName: '',
+      targetField: '',
+      sourceField: '',
+      length: 10,
+      dataType: 'string',
+      transformationType: 'source'
+    });
+  };
+
+  const handleAddMapping = () => {
+    if (!newMappingData.fieldName || !newMappingData.targetField) {
+      return; // Basic validation
+    }
+
+    const newMapping: Omit<FieldMapping, 'id'> = {
+      fieldName: newMappingData.fieldName,
+      targetField: newMappingData.targetField,
+      sourceField: newMappingData.sourceField || undefined,
+      targetPosition: fieldMappings.length + 1,
+      length: newMappingData.length,
+      dataType: newMappingData.dataType,
+      transformationType: newMappingData.transformationType,
+      transactionType: 'default'
+    };
+
+    console.log('Adding new mapping:', newMapping);
+    addFieldMapping(newMapping);
+    handleAddDialogClose();
+  };
+
+  const getTransformationIcon = (type: string) => {
+    switch (type) {
+      case 'source': return '📥';
+      case 'constant': return '📌';
+      case 'composite': return '🔗';
+      case 'conditional': return '🔀';
+      default: return '❓';
+    }
+  };
+
+  const getTransformationTypeColor = (type: string) => {
+    switch (type) {
+      case 'source': return 'primary';
+      case 'constant': return 'success';
+      case 'composite': return 'warning';
+      case 'conditional': return 'secondary';
+      default: return 'default';
+    }
   };
 
   return (
@@ -347,8 +219,8 @@ export const MappingArea: React.FC<MappingAreaProps> = ({ onMappingSelect }) => 
                         <MappingItem
                           mapping={mapping}
                           index={index}
-                          onEdit={handleEditMapping}
-                          onDelete={handleDeleteMapping}
+                          onEdit={() => handleEditMapping(mapping)}
+                          onDelete={() => handleDeleteMapping(mapping.id!)}
                           isDragging={snapshot.isDragging}
                         />
                       </ListItem>
@@ -362,28 +234,261 @@ export const MappingArea: React.FC<MappingAreaProps> = ({ onMappingSelect }) => 
         )}
       </Box>
 
-      {/* Validation Summary */}
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-        {fieldMappings.length > 0 ? (
-          <Alert severity="success" variant="outlined">
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CheckCircle fontSize="small" />
-              <Typography variant="body2">
-                {fieldMappings.length} mappings configured
-              </Typography>
-            </Box>
-          </Alert>
-        ) : (
-          <Alert severity="warning" variant="outlined">
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Warning fontSize="small" />
-              <Typography variant="body2">
-                No field mappings configured
-              </Typography>
-            </Box>
-          </Alert>
-        )}
-      </Box>
+      {/* Add Mapping Dialog */}
+      <Dialog open={showAddDialog} onClose={handleAddDialogClose} maxWidth="md" fullWidth>
+        <DialogTitle>Add New Field Mapping</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                label="Field Name"
+                value={newMappingData.fieldName}
+                onChange={(e) => setNewMappingData(prev => ({ ...prev, fieldName: e.target.value }))}
+                required
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                label="Target Field"
+                value={newMappingData.targetField}
+                onChange={(e) => setNewMappingData(prev => ({ ...prev, targetField: e.target.value }))}
+                required
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <FormControl fullWidth>
+                <InputLabel>Source Field</InputLabel>
+                <Select
+                  value={newMappingData.sourceField}
+                  onChange={(e) => setNewMappingData(prev => ({ ...prev, sourceField: e.target.value }))}
+                  label="Source Field"
+                >
+                  <MenuItem value="">None (Constant/Composite)</MenuItem>
+                  {sourceFields.map(field => (
+                    <MenuItem key={field.name} value={field.name}>
+                      {field.name} ({field.dataType})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                label="Length"
+                type="number"
+                value={newMappingData.length}
+                onChange={(e) => setNewMappingData(prev => ({ ...prev, length: parseInt(e.target.value) || 10 }))}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <FormControl fullWidth>
+                <InputLabel>Data Type</InputLabel>
+                <Select
+                  value={newMappingData.dataType}
+                  onChange={(e) => setNewMappingData(prev => ({ ...prev, dataType: e.target.value as any }))}
+                  label="Data Type"
+                >
+                  <MenuItem value="string">String</MenuItem>
+                  <MenuItem value="numeric">Numeric</MenuItem>
+                  <MenuItem value="date">Date</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={6}>
+              <FormControl fullWidth>
+                <InputLabel>Transformation Type</InputLabel>
+                <Select
+                  value={newMappingData.transformationType}
+                  onChange={(e) => setNewMappingData(prev => ({ ...prev, transformationType: e.target.value as any }))}
+                  label="Transformation Type"
+                >
+                  <MenuItem value="source">Source Field</MenuItem>
+                  <MenuItem value="constant">Constant Value</MenuItem>
+                  <MenuItem value="composite">Composite</MenuItem>
+                  <MenuItem value="conditional">Conditional</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleAddDialogClose}>Cancel</Button>
+          <Button 
+            onClick={handleAddMapping} 
+            variant="contained"
+            disabled={!newMappingData.fieldName || !newMappingData.targetField}
+          >
+            Add Mapping
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
+  );
+};
+
+// MappingItem component for individual field mapping display
+const MappingItem: React.FC<{
+  mapping: FieldMapping;
+  index: number;
+  onEdit: () => void;
+  onDelete: () => void;
+  isDragging: boolean;
+}> = ({ mapping, index, onEdit, onDelete, isDragging }) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleEdit = () => {
+    onEdit();
+    handleMenuClose();
+  };
+
+  const handleDelete = () => {
+    onDelete();
+    handleMenuClose();
+  };
+
+  const getTransformationIcon = (type: string) => {
+    switch (type) {
+      case 'source': return '📥';
+      case 'constant': return '📌';
+      case 'composite': return '🔗';
+      case 'conditional': return '🔀';
+      default: return '❓';
+    }
+  };
+
+  const getTransformationTypeColor = (type: string) => {
+    switch (type) {
+      case 'source': return 'primary';
+      case 'constant': return 'success';
+      case 'composite': return 'warning';
+      case 'conditional': return 'secondary';
+      default: return 'default';
+    }
+  };
+
+  return (
+    <Paper
+      sx={{
+        p: 2,
+        width: '100%',
+        cursor: 'pointer',
+        backgroundColor: isDragging ? 'action.hover' : 'background.paper',
+        '&:hover': {
+          backgroundColor: 'action.hover'
+        }
+      }}
+      onClick={onEdit}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+        <DragIndicator sx={{ mr: 1, color: 'text.secondary' }} />
+        <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
+          {mapping.fieldName} → {mapping.targetField}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>
+          Pos: {mapping.targetPosition}
+        </Typography>
+        <IconButton size="small" onClick={handleMenuClick}>
+          <MoreVert />
+        </IconButton>
+      </Box>
+
+      <Box>
+        {/* Source/Target Row */}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="caption" color="text.secondary" display="block">
+              Source
+            </Typography>
+            <Typography variant="body2">
+              {mapping.transformationType === 'source' && mapping.sourceField
+                ? mapping.sourceField
+                : mapping.transformationType === 'constant' && mapping.defaultValue
+                ? `"${mapping.defaultValue}"`
+                : mapping.transformationType === 'composite' && mapping.sources
+                ? `${mapping.sources.map(s => s.field).join(' + ')}`
+                : 'Not configured'
+              }
+            </Typography>
+          </Box>
+          
+          <Box sx={{ textAlign: 'center', px: 1 }}>
+            <Typography variant="h6">
+              {getTransformationIcon(mapping.transformationType)}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="caption" color="text.secondary" display="block">
+              Target ({mapping.length} chars)
+            </Typography>
+            <Typography variant="body2">
+              {mapping.targetField}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Tags Row */}
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Chip
+            label={mapping.transformationType}
+            size="small"
+            color={getTransformationTypeColor(mapping.transformationType) as any}
+            variant="outlined"
+          />
+          <Chip
+            label={mapping.dataType}
+            size="small"
+            variant="outlined"
+            color="default"
+          />
+          {mapping.pad && (
+            <Chip
+              label={`Pad ${mapping.pad}`}
+              size="small"
+              variant="outlined"
+              color="info"
+            />
+          )}
+          {mapping.conditions && mapping.conditions.length > 0 && (
+            <Chip
+              label="Conditional"
+              size="small"
+              variant="outlined"
+              color="warning"
+            />
+          )}
+        </Box>
+      </Box>
+
+      {/* Actions Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem onClick={handleEdit}>
+          <Edit fontSize="small" sx={{ mr: 1 }} />
+          Edit Mapping
+        </MenuItem>
+        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+          <Delete fontSize="small" sx={{ mr: 1 }} />
+          Delete Mapping
+        </MenuItem>
+      </Menu>
+    </Paper>
   );
 };
