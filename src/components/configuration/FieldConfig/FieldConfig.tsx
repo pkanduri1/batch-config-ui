@@ -1,4 +1,6 @@
 // src/components/configuration/FieldConfig/FieldConfig.tsx
+// Updated to include ConditionalBuilder integration
+
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -30,58 +32,34 @@ import {
 } from '@mui/icons-material';
 import { FieldMapping, CompositeSource, Condition } from '../../../types/configuration';
 import { useConfigurationContext, useSourceSystemsState } from '../../../contexts/ConfigurationContext';
+import ConditionalBuilder from '../ConditionalBuilder/ConditionalBuilder';
 
 interface FieldConfigProps {
   selectedMapping?: FieldMapping | null;
   onClose?: () => void;
+  onSave?: (mapping: FieldMapping) => void;
 }
 
-export const FieldConfig: React.FC<FieldConfigProps> = ({ 
-  selectedMapping, 
-  onClose 
+const FieldConfig: React.FC<FieldConfigProps> = ({
+  selectedMapping,
+  onClose,
+  onSave
 }) => {
-  const { updateFieldMapping, addFieldMapping } = useConfigurationContext();
-  const { sourceFields } = useSourceSystemsState();
-  
-  const [formData, setFormData] = useState<Partial<FieldMapping>>({
+  const [formData, setFormData] = useState<FieldMapping>({
     fieldName: '',
     targetField: '',
     targetPosition: 1,
-    length: 0,
+    length: 10,
     dataType: 'string',
-    transformationType: 'source',
-    pad: 'right',
-    padChar: ' ',
-    defaultValue: '',
-    sourceField: '',
-    sources: [],
-    conditions: []
+    transformationType: 'source'
   });
-
   const [isDirty, setIsDirty] = useState(false);
 
-  // Initialize form when selectedMapping changes
+  const { sourceFields } = useSourceSystemsState();
+
   useEffect(() => {
     if (selectedMapping) {
       setFormData({ ...selectedMapping });
-      setIsDirty(false);
-    } else {
-      // Reset to default for new mapping
-      const nextPosition = Math.max(...([] as number[]), 0) + 1;
-      setFormData({
-        fieldName: '',
-        targetField: '',
-        targetPosition: nextPosition,
-        length: 0,
-        dataType: 'string',
-        transformationType: 'source',
-        pad: 'right',
-        padChar: ' ',
-        defaultValue: '',
-        sourceField: '',
-        sources: [],
-        conditions: []
-      });
       setIsDirty(false);
     }
   }, [selectedMapping]);
@@ -92,36 +70,9 @@ export const FieldConfig: React.FC<FieldConfigProps> = ({
   };
 
   const handleSave = () => {
-    if (!formData.fieldName || !formData.targetField) return;
-
-    const mapping: FieldMapping = {
-      id: selectedMapping?.id || `mapping_${Date.now()}`,
-      fieldName: formData.fieldName!,
-      value: formData.value || undefined,
-      sourceField: formData.sourceField || '',
-      targetField: formData.targetField!,
-      length: formData.length || 0,
-      pad: formData.pad || 'right',
-      padChar: formData.padChar || ' ',
-      sources: formData.sources || undefined,
-      transform: formData.transform || '',
-      delimiter: formData.delimiter || undefined,
-      format: formData.format || '',
-      sourceFormat: formData.sourceFormat || undefined,
-      targetFormat: formData.targetFormat || undefined,
-      transformationType: formData.transformationType || 'source',
-      conditions: formData.conditions || [],
-      targetPosition: formData.targetPosition || 1,
-      dataType: formData.dataType || 'string',
-      defaultValue: formData.defaultValue || ''
-    };
-
-    if (selectedMapping) {
-      updateFieldMapping(mapping);
-    } else {
-      addFieldMapping(mapping);
+    if (onSave) {
+      onSave(formData);
     }
-    
     setIsDirty(false);
     onClose?.();
   };
@@ -149,6 +100,11 @@ export const FieldConfig: React.FC<FieldConfigProps> = ({
     const newSources = [...(formData.sources || [])];
     newSources.splice(index, 1);
     handleInputChange('sources', newSources);
+  };
+
+  const handleConditionalChange = (condition: Condition) => {
+    // Store the condition - convert single condition to array for storage
+    handleInputChange('conditions', [condition]);
   };
 
   if (!selectedMapping && !formData.fieldName) {
@@ -212,11 +168,11 @@ export const FieldConfig: React.FC<FieldConfigProps> = ({
                 fullWidth
                 label="Length"
                 type="number"
-                value={formData.length || 0}
+                value={formData.length || 10}
                 onChange={(e) => handleInputChange('length', parseInt(e.target.value))}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={6}>
               <FormControl fullWidth>
                 <InputLabel>Data Type</InputLabel>
                 <Select
@@ -230,18 +186,7 @@ export const FieldConfig: React.FC<FieldConfigProps> = ({
                 </Select>
               </FormControl>
             </Grid>
-          </Grid>
-        </AccordionDetails>
-      </Accordion>
-
-      {/* Transformation Type */}
-      <Accordion>
-        <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography variant="subtitle1">Transformation</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid item xs={6}>
               <FormControl fullWidth>
                 <InputLabel>Transformation Type</InputLabel>
                 <Select
@@ -257,6 +202,7 @@ export const FieldConfig: React.FC<FieldConfigProps> = ({
               </FormControl>
             </Grid>
 
+            {/* Source Field Selection */}
             {formData.transformationType === 'source' && (
               <Grid item xs={12}>
                 <FormControl fullWidth>
@@ -276,6 +222,7 @@ export const FieldConfig: React.FC<FieldConfigProps> = ({
               </Grid>
             )}
 
+            {/* Constant Value */}
             {formData.transformationType === 'constant' && (
               <Grid item xs={12}>
                 <TextField
@@ -287,15 +234,16 @@ export const FieldConfig: React.FC<FieldConfigProps> = ({
               </Grid>
             )}
 
+            {/* Composite Sources */}
             {formData.transformationType === 'composite' && (
               <Grid item xs={12}>
                 <Box>
                   <Typography variant="subtitle2" gutterBottom>
-                    Composite Sources
+                    Source Fields
                   </Typography>
                   {(formData.sources || []).map((source, index) => (
-                    <Box key={index} sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                      <FormControl fullWidth>
+                    <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <FormControl fullWidth sx={{ mr: 1 }}>
                         <Select
                           value={source.field}
                           onChange={(e) => updateCompositeSource(index, e.target.value)}
@@ -314,18 +262,14 @@ export const FieldConfig: React.FC<FieldConfigProps> = ({
                       </IconButton>
                     </Box>
                   ))}
-                  <Button startIcon={<Add />} onClick={addCompositeSource}>
-                    Add Source
+                  <Button
+                    startIcon={<Add />}
+                    onClick={addCompositeSource}
+                    variant="outlined"
+                    size="small"
+                  >
+                    Add Source Field
                   </Button>
-                  
-                  <TextField
-                    fullWidth
-                    label="Delimiter"
-                    value={formData.delimiter || ''}
-                    onChange={(e) => handleInputChange('delimiter', e.target.value)}
-                    sx={{ mt: 2 }}
-                    placeholder="e.g., space, comma, etc."
-                  />
                 </Box>
               </Grid>
             )}
@@ -333,20 +277,49 @@ export const FieldConfig: React.FC<FieldConfigProps> = ({
         </AccordionDetails>
       </Accordion>
 
-      {/* Padding */}
+      {/* Conditional Logic Configuration */}
+      {formData.transformationType === 'conditional' && (
+        <Accordion>
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Typography variant="subtitle1">Conditional Logic</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Box sx={{ width: '100%' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Define IF-THEN-ELSE logic for field transformation
+              </Typography>
+              
+              <ConditionalBuilder
+                condition={formData.conditions?.[0]} // For now, use first condition
+                sourceFields={sourceFields}
+                onConditionChange={(condition) => {
+                  // Store as array for future multi-condition support
+                  handleConditionalChange(condition);
+                }}
+                onValidate={async (condition) => {
+                  // Add validation logic here
+                  return true;
+                }}
+              />
+            </Box>
+          </AccordionDetails>
+        </Accordion>
+      )}
+
+      {/* Advanced Properties */}
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography variant="subtitle1">Padding</Typography>
+          <Typography variant="subtitle1">Advanced Properties</Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Grid container spacing={2}>
             <Grid item xs={6}>
               <FormControl fullWidth>
-                <InputLabel>Pad Direction</InputLabel>
+                <InputLabel>Padding</InputLabel>
                 <Select
                   value={formData.pad || 'right'}
                   onChange={(e) => handleInputChange('pad', e.target.value)}
-                  label="Pad Direction"
+                  label="Padding"
                 >
                   <MenuItem value="left">Left</MenuItem>
                   <MenuItem value="right">Right</MenuItem>
@@ -362,12 +335,29 @@ export const FieldConfig: React.FC<FieldConfigProps> = ({
                 inputProps={{ maxLength: 1 }}
               />
             </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Format"
+                value={formData.format || ''}
+                onChange={(e) => handleInputChange('format', e.target.value)}
+                helperText="Optional formatting pattern (e.g., date format)"
+              />
+            </Grid>
           </Grid>
         </AccordionDetails>
       </Accordion>
 
-      {/* Actions */}
-      <Box sx={{ mt: 3, display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+      {/* Action Buttons */}
+      <Box sx={{ display: 'flex', gap: 1, mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+        <Button
+          variant="contained"
+          startIcon={<Save />}
+          onClick={handleSave}
+          disabled={!isDirty}
+        >
+          Save Changes
+        </Button>
         <Button
           variant="outlined"
           startIcon={<Cancel />}
@@ -375,15 +365,10 @@ export const FieldConfig: React.FC<FieldConfigProps> = ({
         >
           Cancel
         </Button>
-        <Button
-          variant="contained"
-          startIcon={<Save />}
-          onClick={handleSave}
-          disabled={!formData.fieldName || !formData.targetField || !isDirty}
-        >
-          Save
-        </Button>
       </Box>
     </Box>
   );
 };
+
+export default FieldConfig;
+export { FieldConfig }; // Add named export for compatibility
