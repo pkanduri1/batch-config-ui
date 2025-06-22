@@ -47,3 +47,5 @@ export interface SourceField {
   nullable: boolean;
   description?: string;
 }
+
+export * from './template';

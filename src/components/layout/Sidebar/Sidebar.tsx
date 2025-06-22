@@ -25,7 +25,10 @@ import {
   ExpandMore,
   FolderOpen,
   Work,
-  Close
+  Close,
+  AdminPanelSettings,
+  Description,
+  DynamicForm
 } from '@mui/icons-material';
 import { useConfigurationContext } from '../../../contexts/ConfigurationContext';
 
@@ -76,9 +79,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
     }
   };
 
+  const handleTemplateJobSelect = async (systemId: string, jobName: string) => {
+    try {
+      await selectJob(jobName);
+      navigate(`/template-configuration/${systemId}/${jobName}`);
+    } catch (error) {
+      console.error('Failed to select job:', error);
+    }
+  };
+
   const navigationItems = [
     { path: '/dashboard', label: 'Dashboard', icon: <Dashboard /> },
-    { path: '/configuration', label: 'Configuration', icon: <Settings /> },
+    { path: '/configuration', label: 'Manual Configuration', icon: <Settings /> },
+    { path: '/template-configuration', label: 'Template Configuration', icon: <DynamicForm /> },
+    { path: '/admin/templates', label: 'Template Admin', icon: <AdminPanelSettings /> },
     { path: '/yaml-preview', label: 'YAML Preview', icon: <Code /> },
     { path: '/testing', label: 'Testing', icon: <PlayArrow /> }
   ];
@@ -102,7 +116,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
         {navigationItems.map((item) => (
           <ListItemButton
             key={item.path}
-            selected={location.pathname === item.path}
+            selected={location.pathname === item.path || location.pathname.startsWith(item.path)}
             onClick={() => navigate(item.path)}
           >
             <ListItemIcon>
@@ -167,107 +181,104 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
               </ListItemButton>
             </ListItem>
 
-            {/* Jobs Submenu */}
+            {/* Jobs List */}
             {system.jobs && (
-              <Collapse
-                in={expandedSystems.includes(system.id)}
-                timeout="auto"
-                unmountOnExit
-              >
+              <Collapse in={expandedSystems.includes(system.id)} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   {system.jobs.map((job) => (
-                    <ListItemButton
-                      key={job.name}
-                      sx={{ pl: 4 }}
-                      selected={selectedJob?.name === job.name}
-                      onClick={() => handleJobSelect(system.id, job.name)}
-                    >
-                      <ListItemIcon>
-                        <Work sx={{ fontSize: 16 }} />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Typography variant="body2" noWrap>
-                            {job.name}
-                          </Typography>
-                        }
-                        secondary={
-                          <Typography variant="caption" color="text.secondary" noWrap>
-                            {job.description || 'Batch job'}
-                          </Typography>
-                        }
-                      />
-                    </ListItemButton>
+                    <React.Fragment key={job.name || job.jobName}>
+                      {/* Manual Configuration Option */}
+                      <ListItemButton
+                        sx={{ pl: 6 }}
+                        selected={selectedJob?.name === (job.name || job.jobName) && location.pathname.includes('/configuration/')}
+                        onClick={() => handleJobSelect(system.id, job.name || job.jobName)}
+                      >
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          <Settings fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={
+                            <Typography variant="body2" noWrap>
+                              {job.name || job.jobName} (Manual)
+                            </Typography>
+                          }
+                        />
+                      </ListItemButton>
+
+                      {/* Template Configuration Option */}
+                      <ListItemButton
+                        sx={{ pl: 6 }}
+                        selected={selectedJob?.name === (job.name || job.jobName) && location.pathname.includes('/template-configuration/')}
+                        onClick={() => handleTemplateJobSelect(system.id, job.name || job.jobName)}
+                      >
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          <Description fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={
+                            <Typography variant="body2" noWrap>
+                              {job.name || job.jobName} (Template)
+                            </Typography>
+                          }
+                        />
+                      </ListItemButton>
+                    </React.Fragment>
                   ))}
                 </List>
               </Collapse>
             )}
           </React.Fragment>
         ))}
-
-        {sourceSystems.length === 0 && (
-          <ListItem>
-            <ListItemText
-              primary={
-                <Typography variant="body2" color="text.secondary" align="center">
-                  No systems available
-                </Typography>
-              }
-            />
-          </ListItem>
-        )}
       </List>
 
-      {/* Current Selection Info */}
-      {selectedSourceSystem && (
-        <>
-          <Divider sx={{ mt: 2 }} />
-          <Box sx={{ p: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Current Selection
-            </Typography>
-            <Typography variant="body2" fontWeight="bold">
-              {selectedSourceSystem.name}
-            </Typography>
-            {selectedJob && (
-              <Typography variant="body2" color="text.secondary">
-                Job: {selectedJob.name}
-              </Typography>
-            )}
-          </Box>
-        </>
-      )}
+      {/* Template Info */}
+      <Divider sx={{ mt: 2 }} />
+      <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'primary.contrastText', m: 2, borderRadius: 1 }}>
+        <Typography variant="caption" fontWeight="bold">
+          💡 Template Mode
+        </Typography>
+        <Typography variant="body2" sx={{ fontSize: '0.7rem', mt: 0.5 }}>
+          Use Template Configuration for 90% faster setup with pre-configured target fields.
+        </Typography>
+      </Box>
     </Box>
   );
 
   return (
-    // Replace the single Drawer with:
-<>
-  {/* Mobile Drawer */}
-  <Drawer
-    variant="temporary"
-    open={open}
-    onClose={onClose}
-    ModalProps={{ keepMounted: true }}
-    sx={{
-      display: { xs: 'block', sm: 'none' },
-      '& .MuiDrawer-paper': { width: drawerWidth },
-    }}
-  >
-    {drawer}
-  </Drawer>
-  
-  {/* Desktop Drawer */}
-  <Drawer
-    variant="permanent"
-    sx={{
-      display: { xs: 'none', sm: 'block' },
-      '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box' },
-    }}
-    open
-  >
-    {drawer}
-  </Drawer>
-</>
+    <Box
+      component="nav"
+      sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+      aria-label="navigation"
+    >
+      {/* Mobile drawer */}
+      <Drawer
+        variant="temporary"
+        open={open}
+        onClose={onClose}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile.
+        }}
+        sx={{
+          display: { xs: 'block', sm: 'none' },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+        }}
+      >
+        {drawer}
+      </Drawer>
+
+      {/* Desktop drawer */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          display: { xs: 'none', sm: 'block' },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+        }}
+        open
+      >
+        {drawer}
+      </Drawer>
+    </Box>
   );
 };
+
+export default Sidebar;

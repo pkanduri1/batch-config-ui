@@ -76,6 +76,10 @@ export interface FieldMapping {
   pad?: PadType;
   padChar?: string;
   format?: string;
+  //template integration
+  isFromTemplate?: boolean;
+  templateFieldName?: string;
+
   sourceFormat?: string;
   targetFormat?: string;
   value?: string; // For constant transformations
@@ -90,6 +94,17 @@ export interface FieldMapping {
   
   // Transaction type for multi-transaction configs
   transactionType?: TransactionType;
+}
+
+export interface FieldMappingConfig {
+  sourceSystem: string;
+  jobName: string;
+  transactionType: string;
+  description?: string;
+  fields: FieldMapping[];
+  createdDate?: string;
+  createdBy?: string;
+  version?: number;
 }
 
 export interface Condition {
@@ -111,6 +126,14 @@ export interface Configuration {
   jobName: string;
   fields?: Record<string, FieldMapping>; // Made optional for compatibility
   fieldMappings: FieldMapping[]; // Added for hook compatibility
+
+  // Add template support
+  templateSource?: {
+    fileType: string;
+    transactionType: string;
+    isTemplateGenerated: boolean;
+  };
+  
   currentTransactionType?: TransactionType; // For UI state
   
   // Metadata about available types for this configuration
