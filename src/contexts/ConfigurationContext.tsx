@@ -120,6 +120,7 @@ const selectSourceSystem = useCallback(async (systemId: string) => {
 
 // Add useEffect to restore selection on page load
 useEffect(() => {
+    console.log('Source systems updated:', sourceSystems);
   const savedSystemId = localStorage.getItem('selectedSourceSystem');
   if (savedSystemId && sourceSystems.length > 0 && !selectedSourceSystem) {
     const system = sourceSystems.find(s => s.id === savedSystemId);
