@@ -27,16 +27,14 @@ export const PageLayout: React.FC<PageLayoutProps> = ({ children }) => {
         drawerWidth={DRAWER_WIDTH}
       />
 
-      // In PageLayout.tsx, update the main Box:
-<Box
-  component="main"
-  sx={{
-    flexGrow: 1,    
-    minHeight: '100vh',
-    bgcolor: 'background.default',
-   
-  }}
->
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          minHeight: '100vh',
+          bgcolor: 'background.default'
+        }}
+      >
         <Toolbar />
         {children}
       </Box>

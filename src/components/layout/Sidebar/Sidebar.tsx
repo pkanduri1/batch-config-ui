@@ -246,24 +246,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
 
   return (
     <Box
-  component="nav"
-  sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-  aria-label="navigation"
->
-  <Drawer
-    variant="temporary"
-    open={open}
-    onClose={onClose}
-    ModalProps={{
-      keepMounted: true,
-    }}
-    sx={{
-      '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-    }}
+    component="nav"
+    aria-label="navigation"
   >
-    {drawer}
-  </Drawer>
-</Box>
+    <Drawer
+      variant="temporary"
+      open={open}
+      onClose={onClose}
+      ModalProps={{
+        keepMounted: true,
+      }}
+      sx={{
+        '& .MuiDrawer-paper': { 
+          boxSizing: 'border-box', 
+          width: drawerWidth,
+          marginTop: '64px', // Account for header height
+          height: 'calc(100vh - 64px)'
+        },
+      }}
+    >
+      {drawer}
+    </Drawer>
+  </Box>
   );
 };
 

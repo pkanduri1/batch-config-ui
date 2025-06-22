@@ -193,7 +193,7 @@ batch-config-ui/
 ### Backend Integration
 Update the API proxy in `package.json`:
 ```json
-"proxy": "http://localhost:8081"
+"proxy": "http://localhost:8080"
 ```
 
 ## 🎯 What We've Built
