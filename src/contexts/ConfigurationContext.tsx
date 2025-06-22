@@ -1,5 +1,5 @@
 // src/contexts/ConfigurationContext.tsx
-import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
+import React, { createContext, useContext,useEffect, ReactNode, useState, useCallback } from 'react';
 import { 
   Configuration, 
   FieldMapping, 
@@ -98,22 +98,36 @@ export const ConfigurationProvider: React.FC<ConfigurationProviderProps> = ({ ch
   const { getTransactionTypes } = useTypeRegistry();
   
   // Select source system and load its jobs
-  const selectSourceSystem = useCallback(async (systemId: string) => {
-    const system = sourceSystems.find(s => s.id === systemId);
-    if (!system) {
-      throw new Error(`Source system ${systemId} not found`);
+const selectSourceSystem = useCallback(async (systemId: string) => {
+  const system = sourceSystems.find(s => s.id === systemId);
+  if (!system) {
+    throw new Error(`Source system ${systemId} not found`);
+  }
+  
+  setSelectedSourceSystem(system);
+  setSelectedJob(null); // Clear job selection
+  
+  // Persist selection in localStorage for navigation
+  localStorage.setItem('selectedSourceSystem', systemId);
+  
+  // Load source fields for this system
+  try {
+    await loadSourceFields(systemId);
+  } catch (error) {
+    console.error('Failed to load source fields:', error);
+  }
+}, [sourceSystems, loadSourceFields]);
+
+// Add useEffect to restore selection on page load
+useEffect(() => {
+  const savedSystemId = localStorage.getItem('selectedSourceSystem');
+  if (savedSystemId && sourceSystems.length > 0 && !selectedSourceSystem) {
+    const system = sourceSystems.find(s => s.id === savedSystemId);
+    if (system) {
+      setSelectedSourceSystem(system);
     }
-    
-    setSelectedSourceSystem(system);
-    setSelectedJob(null); // Clear job selection
-    
-    // Load source fields for this system
-    try {
-      await loadSourceFields(systemId);
-    } catch (error) {
-      console.error('Failed to load source fields:', error);
-    }
-  }, [sourceSystems, loadSourceFields]);
+  }
+}, [sourceSystems, selectedSourceSystem]);
   
   // Select job and load its configuration
   const selectJob = useCallback(async (jobName: string) => {

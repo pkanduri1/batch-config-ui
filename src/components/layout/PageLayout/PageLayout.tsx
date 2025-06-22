@@ -31,11 +31,10 @@ export const PageLayout: React.FC<PageLayoutProps> = ({ children }) => {
 <Box
   component="main"
   sx={{
-    flexGrow: 1,
-    width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
-    //ml: { sm: `${DRAWER_WIDTH}px` },
+    flexGrow: 1,    
     minHeight: '100vh',
-    bgcolor: 'background.default'
+    bgcolor: 'background.default',
+   
   }}
 >
         <Toolbar />
