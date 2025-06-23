@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Configuration } from '../../types/configuration';
 import { ValidationResult } from '../../types/configuration';
 import { SourceSystem } from '../../types/configuration';
-import { JobConfig} from '../../types/configuration';
+import { JobConfigResponse} from '../../types/configuration';
 import { ApiResponse } from '../../types/configuration';
 import { SourceField} from '../../types/configuration';
 
@@ -33,6 +33,7 @@ axios.interceptors.request.use(
 // Response interceptor for error handling
 axios.interceptors.response.use(
   (response) => {
+    console.log('Raw API response for source systems:', response.data);
     console.log(`✅ API Response: ${response.status} ${response.config.url}`);
     return response;
   },
@@ -63,15 +64,15 @@ export const configApi = {
     }
   },
 
-  getJobsForSourceSystem: async (sourceSystem: string): Promise<string[]> => {
-    try {
-      const response = await axios.get<string[]>(`${API_BASE_URL}/source-systems/${sourceSystem}/jobs`);
-      return response.data;
-    } catch (error) {
-      console.error(`Failed to fetch jobs for ${sourceSystem}:`, error);
-      throw new Error(`Failed to load jobs for ${sourceSystem}`);
-    }
-  },
+  getJobsForSourceSystem: async (sourceSystem: string): Promise<JobConfigResponse[]> => {
+  try {
+    const response = await axios.get<JobConfigResponse[]>(`${API_BASE_URL}/source-systems/${sourceSystem}/jobs`);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch jobs for ${sourceSystem}:`, error);
+    throw new Error(`Failed to load jobs for ${sourceSystem}`);
+  }
+},
 
   // Field Mappings
   // src/services/api/configApi.ts - Updated getFieldMappings with mock fallback

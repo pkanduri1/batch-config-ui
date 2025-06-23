@@ -28,6 +28,7 @@ export interface ConfigurationContextState {
   selectedSourceSystem: SourceSystem | null;
   selectedJob: JobConfig | null;
   sourceFields: SourceField[];
+  loadJobsForSystem: (systemId: string) => Promise<void>;
   
   // Validation
   validationResult: ValidationResult | null;
@@ -86,7 +87,8 @@ export const ConfigurationProvider: React.FC<ConfigurationProviderProps> = ({ ch
     isLoading: systemsLoading, 
     error: systemsError,
     loadSourceSystems,
-    loadSourceFields 
+    loadSourceFields,
+    loadJobsForSystem 
   } = useSourceSystems();
   
   const { 
@@ -100,6 +102,7 @@ export const ConfigurationProvider: React.FC<ConfigurationProviderProps> = ({ ch
   // Select source system and load its jobs
 const selectSourceSystem = useCallback(async (systemId: string) => {
   const system = sourceSystems.find(s => s.id === systemId);
+  
   if (!system) {
     throw new Error(`Source system ${systemId} not found`);
   }
@@ -131,25 +134,28 @@ useEffect(() => {
 }, [sourceSystems, selectedSourceSystem]);
   
   // Select job and load its configuration
-  const selectJob = useCallback(async (jobName: string) => {
-    if (!selectedSourceSystem) {
-      throw new Error('No source system selected');
-    }
-    
-    const job = selectedSourceSystem.jobs?.find(j => j.name === jobName);
-    if (!job) {
-      throw new Error(`Job ${jobName} not found in ${selectedSourceSystem.name}`);
-    }
-    
-    setSelectedJob(job);
-    
-    // Load configuration for this system/job
-    try {
-      await configHook.loadConfiguration(selectedSourceSystem.id, jobName);
-    } catch (error) {
-      console.error('Failed to load configuration:', error);
-    }
-  }, [selectedSourceSystem, configHook]);
+ const selectJob = useCallback(async (jobName: string) => {
+  if (!selectedSourceSystem) {
+    throw new Error('No source system selected');
+  }
+  
+  // Since jobs array might be empty from API, create a mock job
+  let job = selectedSourceSystem.jobs?.find(j => j.jobName === jobName);
+  
+  if (!job) {
+    // Create a temporary job if not found
+    job = {
+      name: jobName,
+      jobName: jobName,
+      sourceSystem: selectedSourceSystem.id,
+      description: '${jobName} job',
+      files: []
+    };
+    console.log('Job not found, creating temporary job:', job);
+  }
+  
+  setSelectedJob(job);
+}, [selectedSourceSystem]);
   
   // Refresh source systems
   const refreshSourceSystems = useCallback(async () => {
@@ -159,6 +165,8 @@ useEffect(() => {
       console.error('Failed to refresh source systems:', error);
     }
   }, [loadSourceSystems]);
+
+  
   
   // Validate current configuration
   const validateConfiguration = useCallback(async () => {
@@ -196,6 +204,7 @@ useEffect(() => {
     error,
     
     // Source systems
+    loadJobsForSystem,
     sourceSystems,
     selectedSourceSystem,
     selectedJob,

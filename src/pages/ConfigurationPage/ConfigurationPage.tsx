@@ -20,21 +20,26 @@ import { FieldMapping } from '../../types/configuration';
 const ConfigurationPage: React.FC = () => {
   const { systemId, jobName } = useParams();
   const { 
-    selectedSourceSystem, 
-    selectedJob, 
-    selectSourceSystem, 
-    selectJob,
-    sourceSystems,
-    sourceFields 
-  } = useSourceSystemsState();
+  selectedSourceSystem, 
+  selectedJob, 
+  selectSourceSystem, 
+  selectJob,
+  sourceSystems,
+  sourceFields,
+  isLoading, 
+  error, 
+  addFieldMapping,
+  fieldMappings,
+  reorderFieldMappings 
+} = useConfigurationContext();
   
-  const { 
-    isLoading, 
-    error, 
-    addFieldMapping,
-    fieldMappings,
-    reorderFieldMappings 
-  } = useConfigurationContext();
+//   const { 
+//     isLoading, 
+//     error, 
+//     addFieldMapping,
+//     fieldMappings,
+//     reorderFieldMappings 
+//   } = useConfigurationContext();
   
   const [selectedMapping, setSelectedMapping] = React.useState<FieldMapping | null>(null);
 
@@ -49,13 +54,11 @@ const ConfigurationPage: React.FC = () => {
   }, [systemId, selectedSourceSystem, sourceSystems, selectSourceSystem]);
 
   useEffect(() => {
-    if (jobName && selectedSourceSystem && !selectedJob) {
-      const job = selectedSourceSystem.jobs.find(j => j.jobName === jobName);
-      if (job) {
-        selectJob(jobName);
-      }
-    }
-  }, [jobName, selectedSourceSystem, selectedJob, selectJob]);
+  if (jobName && selectedSourceSystem && !selectedJob) {
+    // Since jobs array is empty, just set the job name directly
+    selectJob(jobName);
+  }
+}, [jobName, selectedSourceSystem, selectedJob, selectJob]);
 
   // Handle all drag and drop operations
   const handleDragEnd = (result: DropResult) => {
@@ -141,18 +144,19 @@ const ConfigurationPage: React.FC = () => {
           <Typography variant="h5" gutterBottom>
             Configuration: {selectedSourceSystem.name} - {selectedJob.jobName}
           </Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Chip label={selectedSourceSystem.systemType} size="small" />
-            <Chip label={`${sourceFields.length} source fields`} size="small" variant="outlined" />
-            <Chip label={`${fieldMappings.length} mappings`} size="small" variant="outlined" />
-          </Box>
+          // Replace the header Chips:
+<Box sx={{ display: 'flex', gap: 1 }}>
+  <span>{selectedSourceSystem.type || selectedSourceSystem.systemType || 'Unknown'}</span>
+  <span>{sourceFields.length} source fields</span>
+  <span>{fieldMappings.length} mappings</span>
+</Box>
         </Box>
 
         {/* 3-Panel Layout */}
         <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           {/* Left Panel - Source Fields */}
           <Paper sx={{ width: '300px', display: 'flex', flexDirection: 'column' }}>
-            <SourceFieldList sourceFields={[]} />
+            <SourceFieldList sourceFields={sourceFields} />
           </Paper>
 
           <Divider orientation="vertical" flexItem />

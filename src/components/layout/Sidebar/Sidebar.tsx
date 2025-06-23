@@ -42,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
   const navigate = useNavigate();
   const location = useLocation();
   const {
+    loadJobsForSystem,
     sourceSystems,
     selectedSourceSystem,
     selectedJob,
@@ -59,30 +60,38 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
     );
   };
 
-  const handleSystemSelect = async (systemId: string) => {
-    try {
-      await selectSourceSystem(systemId);
-      if (!expandedSystems.includes(systemId)) {
-        toggleSystemExpanded(systemId);
-      }
-    } catch (error) {
-      console.error('Failed to select system:', error);
+ const handleSystemSelect = async (systemId: string) => {
+  try {
+    console.log('Selecting system:', systemId);
+    await selectSourceSystem(systemId);
+    
+    // Load jobs from API when expanding
+    if (!expandedSystems.includes(systemId)) {
+      toggleSystemExpanded(systemId);
+      await loadJobsForSystem(systemId); // Use API call
     }
-  };
+  } catch (error) {
+    console.error('Failed to select system:', error);
+  }
+};
 
   const handleJobSelect = async (systemId: string, jobName: string) => {
     try {
       await selectJob(jobName);
-      navigate(`/configuration/${systemId}/${jobName}`);
+      navigate('/configuration/${systemId}/${jobName}');
     } catch (error) {
       console.error('Failed to select job:', error);
     }
   };
 
+  const handleJobClick = (systemId: string, jobName: string) => {
+  navigate(`/configuration/${systemId}/${jobName}`);
+};
+
   const handleTemplateJobSelect = async (systemId: string, jobName: string) => {
     try {
       await selectJob(jobName);
-      navigate(`/template-configuration/${systemId}/${jobName}`);
+      navigate('/template-configuration/${systemId}/${jobName}');
     } catch (error) {
       console.error('Failed to select job:', error);
     }
@@ -125,6 +134,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
             <ListItemText primary={item.label} />
           </ListItemButton>
         ))}
+        {/* test button */}
+  {/* <ListItemButton onClick={() => navigate('/configuration/hr/p327')}>
+    <ListItemIcon>
+      <Settings />
+    </ListItemIcon>
+    <ListItemText primary="TEST: Force Navigate" />
+  </ListItemButton> */}
       </List>
 
       <Divider />
@@ -153,12 +169,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
                       <Typography variant="body2" noWrap>
                         {system.name}
                       </Typography>
-                      <Chip
-                        label={system.jobs?.length || 0}
-                        size="small"
-                        variant="outlined"
-                        sx={{ minWidth: 'auto', height: 16, fontSize: '0.7rem' }}
-                      />
+                      <span style={{ fontSize: '0.7rem' }}>({system.jobs?.length || 0})</span>
                     </Box>
                   }
                   secondary={
@@ -194,6 +205,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
                         onClick={() => handleJobSelect(system.id, job.name || job.jobName)}
                       >
                         <ListItemIcon sx={{ minWidth: 32 }}>
+                            
                           <Settings fontSize="small" />
                         </ListItemIcon>
                         <ListItemText
@@ -245,10 +257,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
   );
 
   return (
-    <Box
+  <Box
     component="nav"
+    sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
     aria-label="navigation"
   >
+    {/* Mobile drawer */}
     <Drawer
       variant="temporary"
       open={open}
@@ -257,18 +271,39 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
         keepMounted: true,
       }}
       sx={{
+        display: { xs: 'block', sm: 'none' },
         '& .MuiDrawer-paper': { 
           boxSizing: 'border-box', 
           width: drawerWidth,
-          marginTop: '64px', // Account for header height
+          marginTop: '64px',
           height: 'calc(100vh - 64px)'
         },
       }}
     >
       {drawer}
     </Drawer>
+
+    {/* Desktop permanent drawer */}
+    <Drawer
+      variant="permanent"
+      sx={{
+        display: { xs: 'none', sm: 'block' },
+        '& .MuiDrawer-paper': { 
+          boxSizing: 'border-box', 
+          width: drawerWidth,
+          marginTop: '64px',
+          height: 'calc(100vh - 64px)',
+          position: 'relative'
+        },
+      }}
+      open
+    >
+      {drawer}
+    </Drawer>
   </Box>
-  );
-};
+);
+}
+
+
 
 export default Sidebar;

@@ -107,6 +107,19 @@ export interface FieldMappingConfig {
   version?: number;
 }
 
+export interface JobConfigResponse {
+  id: string;
+  sourceSystemId: string;
+  jobName: string;
+  description: string;
+  inputPath: string;
+  outputPath: string;
+  querySql: string;
+  enabled: boolean;
+  created: string;
+  transactionTypes: string[];
+}
+
 export interface Condition {
   ifExpr: string;
   then?: string;
@@ -133,7 +146,7 @@ export interface Configuration {
     transactionType: string;
     isTemplateGenerated: boolean;
   };
-  
+
   currentTransactionType?: TransactionType; // For UI state
   
   // Metadata about available types for this configuration
@@ -168,7 +181,12 @@ export interface SourceSystem {
   name: string;
   description: string;
   systemType: string; // References SourceSystemTypeDefinition.code
+  type?: string; // Add for API response
   jobs: JobConfig[]; // Changed from string[] to JobConfig[]
+   jobCount?: number; // Add this property
+  enabled?: boolean; // Add this property
+  lastModified?: string; // Add this property
+  connectionProperties?: any; // Add this property
   inputBasePath?: string;
   outputBasePath?: string;
   

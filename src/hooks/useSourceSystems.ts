@@ -19,6 +19,7 @@ export interface UseSourceSystemsReturn {
   selectJob: (jobName: string) => void;
   loadSourceFields: (systemId: string) => Promise<void>;
   refreshData: () => Promise<void>;
+  loadJobsForSystem: (systemId: string) => Promise<void>;
   
   // Computed
   getSystemById: (systemId: string) => SourceSystem | undefined;
@@ -142,41 +143,77 @@ export const useSourceSystems = (
 
   // Load source fields for a system
   const loadSourceFields = useCallback(async (systemId: string) => {
-    // Return cached data if valid
-    if (isCacheValid() && cache.fields[systemId]) {
-      setSourceFields(cache.fields[systemId]);
-      return;
-    }
+  // Return cached data if valid
+  if (isCacheValid() && cache.fields[systemId]) {
+    setSourceFields(cache.fields[systemId]);
+    return;
+  }
 
-    setIsLoading(true);
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const fields = await configApi.getSourceFields(systemId);
+    
+    // Map API response to frontend format
+    const mappedFields = fields.map(field => ({
+      name: field.name,
+      dataType: field.dataType || 'string', // Map 'type' to 'dataType' with fallback
+      description: field.description,
+      nullable: field.nullable,
+      maxLength: field.maxLength
+    }));
+    
+    setSourceFields(mappedFields);
+    
+    // Update cache with mapped fields
+    if (cacheEnabled) {
+      setCache(prev => ({
+        ...prev,
+        fields: {
+          ...prev.fields,
+          [systemId]: mappedFields
+        },
+        lastUpdated: Date.now()
+      }));
+    }
+  } catch (err) {
+    console.warn('Using mock source fields:', err);
+    setSourceFields(mockSourceFields);
     setError(null);
+  } finally {
+    setIsLoading(false);
+  }
+}, [isCacheValid, cache.fields, cacheEnabled]);
 
-    try {
-      const fields = await configApi.getSourceFields(systemId);
-      setSourceFields(fields);
-      
-      // Update cache
-      if (cacheEnabled) {
-        setCache(prev => ({
-          ...prev,
-          fields: {
-            ...prev.fields,
-            [systemId]: fields
-          },
-          lastUpdated: Date.now()
-        }));
-      }
-    } catch (err) {
-      //const errorMessage = err instanceof Error ? err.message : 'Failed to load source fields';
-     // setError(errorMessage);
-      //console.error('Failed to load source fields:', err);
-      console.warn('Using mock source fields:', err);
-      setSourceFields(mockSourceFields);
-      setError(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isCacheValid, cache.fields, cacheEnabled]);
+// In useSourceSystems.ts, add this function
+// Update loadJobsForSystem in useSourceSystems.ts
+const loadJobsForSystem = useCallback(async (systemId: string) => {
+  try {
+    console.log('Loading jobs for system:', systemId);
+    const jobConfigs = await configApi.getJobsForSourceSystem(systemId);
+    
+    // Map API response to expected format
+    const jobs = jobConfigs.map(jobConfig => ({
+      name: jobConfig.jobName,        // Map jobName to name
+      jobName: jobConfig.jobName,     // Keep jobName
+      sourceSystem: systemId,
+      description: jobConfig.description,
+      files: []
+    }));
+    
+    // Update the source system with loaded jobs
+    setSourceSystems(prev => prev.map(system => 
+      system.id === systemId 
+        ? { ...system, jobs: jobs }
+        : system
+    ));
+    
+    console.log('Jobs loaded for', systemId, ':', jobs);
+  } catch (error) {
+    console.error(`Failed to load jobs for ${systemId}:`, error);
+  }
+}, []);
 
   // Refresh all data
   const refreshData = useCallback(async () => {
@@ -261,6 +298,7 @@ export const useSourceSystems = (
     selectSystem,
     selectJob,
     loadSourceFields,
+    loadJobsForSystem,
     refreshData,
     
     // Computed

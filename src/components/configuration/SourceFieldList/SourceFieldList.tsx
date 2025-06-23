@@ -34,22 +34,29 @@ interface FieldItemProps {
 }
 
 const FieldItem: React.FC<FieldItemProps> = ({ field, index, isDragging }) => {
-  const getDataTypeColor = (dataType: string) => {
-    switch (dataType.toLowerCase()) {
-      case 'string':
-      case 'text':
-        return 'primary';
-      case 'numeric':
-      case 'number':
-      case 'integer':
-        return 'success';
-      case 'date':
-      case 'datetime':
-        return 'warning';
-      default:
-        return 'default';
-    }
-  };
+  const getDataTypeColor = (dataType: string | undefined): string => {
+  if (!dataType) {
+    return '#gray'; // Default color for undefined dataType
+  }
+  
+  switch (dataType.toLowerCase()) {
+    case 'string':
+    case 'varchar':
+    case 'text':
+      return '#1976d2'; // blue
+    case 'number':
+    case 'integer':
+    case 'decimal':
+      return '#388e3c'; // green
+    case 'date':
+    case 'datetime':
+      return '#f57c00'; // orange
+    case 'boolean':
+      return '#7b1fa2'; // purple
+    default:
+      return '#616161'; // gray
+  }
+};
 
   return (
     <Paper
@@ -106,11 +113,11 @@ const FieldItem: React.FC<FieldItemProps> = ({ field, index, isDragging }) => {
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Chip
-              label={field.dataType}
-              size="small"
-              color={getDataTypeColor(field.dataType) as any}
-              variant="outlined"
-            />
+  label={field.dataType}
+  size="small"
+  variant="outlined"
+  color="default"
+/>
             
             {field.maxLength && (
               <Chip
@@ -206,24 +213,24 @@ export const SourceFieldList: React.FC<SourceFieldListProps> = ({
           </Typography>
           {uniqueDataTypes.map(type => (
             <Chip
-              key={type}
-              label={type}
-              size="small"
-              variant={typeFilter === type ? "filled" : "outlined"}
-              color={typeFilter === type ? "primary" : "default"}
-              onClick={() => setTypeFilter(typeFilter === type ? '' : type)}
-              sx={{ cursor: 'pointer' }}
-            />
+    key={type}
+    label={type}
+    size="small"
+    variant={typeFilter === type ? "filled" : "outlined"}
+    color="default"  // Change from dynamic color to "default"
+    onClick={() => setTypeFilter(typeFilter === type ? '' : type)}
+    sx={{ cursor: 'pointer' }}
+  />
           ))}
           {(searchTerm || typeFilter) && (
             <Chip
-              label="Clear"
-              size="small"
-              variant="outlined"
-              color="secondary"
-              onClick={clearFilters}
-              sx={{ cursor: 'pointer' }}
-            />
+  label="Clear"
+  size="small"
+  variant="outlined"
+  color="default"  // Change from "secondary" to "default"
+  onClick={clearFilters}
+  sx={{ cursor: 'pointer' }}
+/>
           )}
         </Box>
       </Box>
