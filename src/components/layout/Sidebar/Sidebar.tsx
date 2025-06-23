@@ -78,7 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
   const handleJobSelect = async (systemId: string, jobName: string) => {
     try {
       await selectJob(jobName);
-      navigate('/configuration/${systemId}/${jobName}');
+      navigate(`/configuration/${systemId}/${jobName}`);
     } catch (error) {
       console.error('Failed to select job:', error);
     }
@@ -91,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, drawerWidth }) 
   const handleTemplateJobSelect = async (systemId: string, jobName: string) => {
     try {
       await selectJob(jobName);
-      navigate('/template-configuration/${systemId}/${jobName}');
+      navigate(`/template-configuration/${systemId}/${jobName}`);
     } catch (error) {
       console.error('Failed to select job:', error);
     }

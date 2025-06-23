@@ -142,9 +142,9 @@ const ConfigurationPage: React.FC = () => {
         {/* Header */}
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Typography variant="h5" gutterBottom>
-            Configuration: {selectedSourceSystem.name} - {selectedJob.jobName}
+            {/* Configuration: {selectedSourceSystem.name} - {selectedJob.jobName} */}
           </Typography>
-          // Replace the header Chips:
+          
 <Box sx={{ display: 'flex', gap: 1 }}>
   <span>{selectedSourceSystem.type || selectedSourceSystem.systemType || 'Unknown'}</span>
   <span>{sourceFields.length} source fields</span>
