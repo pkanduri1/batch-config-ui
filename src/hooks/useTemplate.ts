@@ -42,9 +42,13 @@ export const useTemplate = (): UseTemplateReturn => {
   const loadFileTypes = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
-      const data = await templateApiService.getAllFileTypes();
-      setFileTypes(data);
+            const types = await templateApiService.getFileTypes();
+            // Map FileType[] to FileTypeTemplate[] by adding required properties
+            const templateTypes: FileTypeTemplate[] = types.map(type => ({
+              ...type,
+              recordLength: (type as any).recordLength ?? 0, // Default to 0 if missing
+            }));
+            setFileTypes(templateTypes);
     } catch (err) {
       setError('Failed to load file types');
       console.error('Load file types error:', err);
@@ -133,7 +137,7 @@ export const useTemplate = (): UseTemplateReturn => {
     try {
       setLoading(true);
       setError(null);
-      return await templateApiService.validateTemplate(template);
+      return await templateApiService.validateTemplate(template.fileType, template.fields || []);
     } catch (err) {
       setError('Template validation failed');
       console.error('Template validation error:', err);

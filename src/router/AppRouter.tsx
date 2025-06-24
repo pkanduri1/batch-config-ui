@@ -7,7 +7,7 @@ import { YamlPreviewPage } from '../pages/YamlPreviewPage';
 import { TestingPage } from '../pages/TestingPage';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TemplateConfigurationPage } from '../pages/TemplateConfigurationPage/TemplateConfigurationPage';
-import { TemplateAdminPage } from '../pages/TemplateAdminPage/TemplateAdminPage';
+import TemplateAdminPage from '../pages/TemplateAdminPage/TemplateAdminPage';
 import { useLocation } from 'react-router-dom';
 export const AppRouter: React.FC = () => {
 

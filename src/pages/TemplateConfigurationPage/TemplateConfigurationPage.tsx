@@ -70,18 +70,22 @@ export const TemplateConfigurationPage: React.FC = () => {
   }, [selectedFileType, selectedTransactionType]);
 
   const fetchFileTypes = async () => {
-    try {
-      setLoading(true);
-      const data = await templateApiService.getAllFileTypes();
-      setFileTypes(data);
-      setError(null);
-    } catch (error) {
-      setError('Failed to load file types');
-      console.error('Error fetching file types:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        setLoading(true);
+        const types = await templateApiService.getFileTypes();
+        setFileTypes(
+          types.map((t: any) => ({
+            ...t,
+            recordLength: t.recordLength ?? 0 // Provide a default if missing
+          }))
+        );
+      } catch (error) {
+        setError('Failed to load file types');
+      } finally {
+        setLoading(false);
+      }
+    };
+  
 
   const fetchTransactionTypes = async (fileType: string) => {
     try {
