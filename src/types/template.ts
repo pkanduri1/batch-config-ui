@@ -73,7 +73,6 @@ export interface UpdateFieldRequest {
 export interface CreateFileTypeRequest {
   fileType: string;
   description: string;
-  transactionType?: string;
   maxFields?: number;
   validationRules?: string;
   enabled?: 'Y' | 'N';

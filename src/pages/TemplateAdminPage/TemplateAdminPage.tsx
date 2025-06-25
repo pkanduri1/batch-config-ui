@@ -33,7 +33,8 @@ import {
   FormControlLabel,
   Fade,
   CircularProgress,
-  Stack
+  Stack,
+  Autocomplete
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -64,7 +65,6 @@ interface NewFieldData {
 interface NewFileTypeData {
   fileType: string;
   description: string;
-  transactionType: string;
   maxFields: number;
   validationRules: string;
 }
@@ -106,7 +106,6 @@ const TemplateAdminPage: React.FC = () => {
   const [newFileType, setNewFileType] = useState<NewFileTypeData>({
     fileType: '',
     description: '',
-    transactionType: 'default',
     maxFields: 500,
     validationRules: ''
   });
@@ -186,19 +185,33 @@ const TemplateAdminPage: React.FC = () => {
     setNewField(prev => ({ ...prev, targetPosition: maxPosition + 1 }));
   };
 
-  const validateField = (field: NewFieldData): string[] => {
+  const validateField = (field: NewFieldData, editingIndex?: number): string[] => {
     const errors: string[] = [];
     
     if (!field.fieldName.trim()) {
       errors.push('Field name is required');
-    } else if (templateFields.some(f => f.fieldName.toLowerCase() === field.fieldName.toLowerCase())) {
-      errors.push('Field name already exists');
+    } else {
+      // When editing, exclude the current field from duplicate check
+      const existingFields = editingIndex !== undefined 
+        ? templateFields.filter((_, index) => index !== editingIndex)
+        : templateFields;
+      
+      if (existingFields.some(f => f.fieldName.toLowerCase() === field.fieldName.toLowerCase())) {
+        errors.push('Field name already exists');
+      }
     }
     
     if (field.targetPosition <= 0) {
       errors.push('Position must be greater than 0');
-    } else if (templateFields.some(f => f.targetPosition === field.targetPosition)) {
-      errors.push('Position already exists');
+    } else {
+      // When editing, exclude the current field from position check
+      const existingFields = editingIndex !== undefined 
+        ? templateFields.filter((_, index) => index !== editingIndex)
+        : templateFields;
+      
+      if (existingFields.some(f => f.targetPosition === field.targetPosition)) {
+        errors.push('Position already exists');
+      }
     }
     
     if (field.length <= 0) {
@@ -219,10 +232,6 @@ const TemplateAdminPage: React.FC = () => {
       errors.push('Description is required');
     }
     
-    if (!fileType.transactionType.trim()) {
-      errors.push('Transaction type is required');
-    }
-    
     if (fileType.maxFields <= 0) {
       errors.push('Max fields must be greater than 0');
     }
@@ -238,28 +247,37 @@ const TemplateAdminPage: React.FC = () => {
       return;
     }
 
-    const fieldToAdd: FieldTemplate = {
-      fileType: selectedFileType,
-      transactionType: newField.transactionType || selectedTransactionType,
-      fieldName: newField.fieldName,
-      targetPosition: newField.targetPosition,
-      length: newField.length,
-      dataType: newField.dataType,
-      format: newField.format,
-      required: newField.required as 'Y' | 'N',
-      description: newField.description,
-      enabled: 'Y'
-    };
-
     try {
-      const updatedFields = [...templateFields, { ...fieldToAdd, isEditing: false }]
-        .sort((a, b) => a.targetPosition - b.targetPosition);
-      setTemplateFields(updatedFields);
+      setLoading(true);
+      
+      // Use the real backend API to create the field
+      const fieldToAdd = await templateApiService.createField(selectedFileType, {
+        transactionType: newField.transactionType || selectedTransactionType,
+        fieldName: newField.fieldName,
+        targetPosition: newField.targetPosition,
+        length: newField.length,
+        dataType: newField.dataType as any,
+        format: newField.format,
+        required: newField.required as 'Y' | 'N',
+        description: newField.description,
+        enabled: 'Y',
+        createdBy: 'admin'
+      });
+
+      // Refresh the template fields from backend
+      await fetchTemplateFields(selectedFileType, selectedTransactionType);
+      
+      // Refresh transaction types to include any new ones
+      await fetchTransactionTypes(selectedFileType);
+      
       setAddFieldOpen(false);
       resetNewField();
       setSuccessMessage('Field added successfully');
     } catch (error) {
+      console.error('Failed to add field:', error);
       setError('Failed to add field');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -297,7 +315,7 @@ const TemplateAdminPage: React.FC = () => {
       required: field.required,
       description: field.description || '',
       transactionType: field.transactionType
-    });
+    }, index); // Pass the editing index
 
     if (errors.length > 0) {
       setError(errors.join(', '));
@@ -380,7 +398,6 @@ const TemplateAdminPage: React.FC = () => {
         description: newFileType.description,
         maxFields: newFileType.maxFields,
         validationRules: newFileType.validationRules,
-        transactionType: newFileType.transactionType,
         enabled: 'Y',
         createdBy: 'admin'
       });
@@ -392,11 +409,10 @@ const TemplateAdminPage: React.FC = () => {
       setNewFileType({
         fileType: '',
         description: '',
-        transactionType: 'default',
         maxFields: 500,
         validationRules: ''
       });
-      setSuccessMessage(`File type '${newFileType.fileType}' with transaction type '${newFileType.transactionType}' added successfully`);
+      setSuccessMessage(`File type '${newFileType.fileType}' added successfully`);
     } catch (error) {
       setError('Failed to add file type');
     } finally {
@@ -431,21 +447,59 @@ const TemplateAdminPage: React.FC = () => {
   const handleSaveTemplate = async () => {
     try {
       setLoading(true);
-      const templateData = {
-        fileType: selectedFileType,
-        description: `Template for ${selectedFileType}`,
-        createdBy: 'admin',
-        replaceExisting: true,
-        fields: templateFields.map(({ isEditing, originalData, ...field }) => field)
-      };
-
-      const result = await templateApiService.importFromJson(templateData);
-      if (result.success) {
-        setSuccessMessage('Template saved successfully!');
-      } else {
-        setError(`Save failed: ${result.message}`);
+      
+      const fieldsToSave = templateFields.map(({ isEditing, originalData, ...field }) => field);
+      
+      if (fieldsToSave.length === 0) {
+        setError('No fields to save');
+        return;
       }
+
+      // Use the actual backend endpoint
+      try {
+        await templateApiService.bulkUpdateFields(selectedFileType, fieldsToSave);
+        setSuccessMessage(`Template saved successfully! ${fieldsToSave.length} fields processed.`);
+        
+        // Refresh the template fields from backend
+        await fetchTemplateFields(selectedFileType, selectedTransactionType);
+      } catch (error) {
+        console.error('Bulk save failed, trying individual field operations:', error);
+        
+        // Fallback: save fields individually
+        let savedCount = 0;
+        let errorCount = 0;
+        
+        for (const field of fieldsToSave) {
+          try {
+            await templateApiService.createField(selectedFileType, {
+              transactionType: field.transactionType,
+              fieldName: field.fieldName,
+              targetPosition: field.targetPosition,
+              length: field.length,
+              dataType: field.dataType,
+              format: field.format,
+              required: field.required,
+              description: field.description,
+              enabled: field.enabled,
+              createdBy: 'admin'
+            });
+            savedCount++;
+          } catch (fieldError) {
+            console.error(`Failed to save field ${field.fieldName}:`, fieldError);
+            errorCount++;
+          }
+        }
+        
+        if (savedCount > 0) {
+          setSuccessMessage(`Template saved! ${savedCount} fields saved, ${errorCount} errors.`);
+          await fetchTemplateFields(selectedFileType, selectedTransactionType);
+        } else {
+          setError('Failed to save any template fields');
+        }
+      }
+      
     } catch (error) {
+      console.error('Save template error:', error);
       setError('Failed to save template');
     } finally {
       setLoading(false);
@@ -668,16 +722,22 @@ const TemplateAdminPage: React.FC = () => {
                     
                     <TableCell>
                       {field.isEditing ? (
-                        <Select
-                          size="small"
+                        <Autocomplete
+                          freeSolo
+                          options={transactionTypes}
                           value={field.transactionType}
-                          onChange={(e) => handleFieldChange(index, 'transactionType', e.target.value)}
+                          onChange={(e, newValue) => handleFieldChange(index, 'transactionType', newValue || 'default')}
+                          onInputChange={(e, newInputValue) => handleFieldChange(index, 'transactionType', newInputValue || 'default')}
+                          size="small"
                           sx={{ minWidth: 120 }}
-                        >
-                          {transactionTypes.map(type => (
-                            <MenuItem key={type} value={type}>{type}</MenuItem>
-                          ))}
-                        </Select>
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                        />
                       ) : (
                         <Chip label={field.transactionType} size="small" color="primary" variant="outlined" />
                       )}
@@ -917,18 +977,22 @@ const TemplateAdminPage: React.FC = () => {
               </FormControl>
             </Grid>
             <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Transaction Type</InputLabel>
-                <Select
-                  value={newField.transactionType}
-                  onChange={(e) => setNewField({...newField, transactionType: e.target.value})}
-                  label="Transaction Type"
-                >
-                  {transactionTypes.map(type => (
-                    <MenuItem key={type} value={type}>{type}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                fullWidth
+                freeSolo
+                options={transactionTypes}
+                value={newField.transactionType}
+                onChange={(e, newValue) => setNewField({...newField, transactionType: newValue || 'default'})}
+                onInputChange={(e, newInputValue) => setNewField({...newField, transactionType: newInputValue || 'default'})}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Transaction Type"
+                    required
+                    helperText="Select existing or enter new transaction type"
+                  />
+                )}
+              />
             </Grid>
             <Grid item xs={12}>
               <TextField
@@ -970,17 +1034,6 @@ const TemplateAdminPage: React.FC = () => {
                 value={newFileType.description}
                 onChange={(e) => setNewFileType({...newFileType, description: e.target.value})}
                 required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Transaction Type"
-                value={newFileType.transactionType}
-                onChange={(e) => setNewFileType({...newFileType, transactionType: e.target.value})}
-                required
-                placeholder="e.g., default, correction, reversal"
-                helperText="Initial transaction type for this file type"
               />
             </Grid>
             <Grid item xs={12}>
