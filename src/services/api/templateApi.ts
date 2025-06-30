@@ -11,7 +11,8 @@ import {
   TemplateToConfigurationResult,
   CreateFieldRequest,
   UpdateFieldRequest,
-  CreateFileTypeRequest
+  CreateFileTypeRequest,
+  TemplateMetadata
 } from '../../types/template';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
@@ -289,6 +290,7 @@ export const templateApiService = {
     jobName: string
   ): Promise<TemplateToConfigurationResult> {
     try {
+      // First try the metadata endpoint (if it exists in future)
       const response = await templateApi.post<TemplateToConfigurationResult>(
         `/${fileType}/${transactionType}/create-config-with-metadata`,
         null,
@@ -298,8 +300,33 @@ export const templateApiService = {
       );
       return response.data;
     } catch (error) {
-      console.error('Failed to create configuration with metadata:', error);
-      throw new Error('Failed to generate configuration with metadata');
+      console.warn('Metadata endpoint not available, using standard endpoint');
+      
+      // Fallback to standard endpoint and add metadata manually
+      try {
+        const config = await this.createConfigurationFromTemplate(
+          fileType, transactionType, sourceSystem, jobName
+        );
+        
+        // Add template metadata manually
+        const templateMetadata: TemplateMetadata = {
+          fileType,
+          transactionType,
+          templateVersion: 1,
+          fieldsFromTemplate: config.fields?.length || 0,
+          totalFields: config.fields?.length || 0,
+          generatedAt: new Date().toISOString(),
+          generatedBy: 'ui-user'
+        };
+        
+        return {
+          ...config,
+          templateMetadata
+        } as TemplateToConfigurationResult;
+      } catch (fallbackError) {
+        console.error('Both endpoints failed:', fallbackError);
+        throw new Error('Failed to generate configuration from template');
+      }
     }
   },
 

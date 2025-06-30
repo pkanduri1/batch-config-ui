@@ -78,7 +78,7 @@ const TemplateAdminPage: React.FC = () => {
   // State management
   const [fileTypes, setFileTypes] = useState<FileType[]>([]);
   const [selectedFileType, setSelectedFileType] = useState<string>('');
-  const [selectedTransactionType, setSelectedTransactionType] = useState<string>('default');
+  const [selectedTransactionType, setSelectedTransactionType] = useState<string>('ALL');
   const [transactionTypes, setTransactionTypes] = useState<string[]>(['default']);
   const [templateFields, setTemplateFields] = useState<EditingField[]>([]);
   const [loading, setLoading] = useState(false);
@@ -129,13 +129,18 @@ const TemplateAdminPage: React.FC = () => {
   useEffect(() => {
     if (selectedFileType) {
       fetchTransactionTypes(selectedFileType);
-      setSelectedTransactionType('default');
+      setSelectedTransactionType('ALL'); // Always start with "ALL" to show all fields
     }
   }, [selectedFileType]);
 
   useEffect(() => {
     if (selectedFileType && selectedTransactionType) {
-      fetchTemplateFields(selectedFileType, selectedTransactionType);
+      if (selectedTransactionType === 'ALL') {
+        // Fetch all fields for the file type across all transaction types
+        fetchAllTemplateFields(selectedFileType);
+      } else {
+        fetchTemplateFields(selectedFileType, selectedTransactionType);
+      }
       resetNewFieldPosition();
     }
   }, [selectedFileType, selectedTransactionType]);
@@ -179,9 +184,35 @@ const TemplateAdminPage: React.FC = () => {
     }
   };
 
+  const fetchAllTemplateFields = async (fileType: string) => {
+    try {
+      setLoading(true);
+      // Get all transaction types and fetch fields for each
+      const allFields: FieldTemplate[] = [];
+      
+      for (const txnType of transactionTypes.filter(t => t !== 'ALL')) {
+        try {
+          const fields = await templateApiService.getTemplateFields(fileType, txnType);
+          allFields.push(...fields);
+        } catch (error) {
+          console.warn(`Failed to fetch fields for ${fileType}/${txnType}:`, error);
+        }
+      }
+      
+      setTemplateFields(allFields.map(field => ({ ...field, isEditing: false })));
+    } catch (error) {
+      setError(`Failed to load template fields for ${fileType}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Utility functions
   const resetNewFieldPosition = () => {
-    const maxPosition = Math.max(...templateFields.map(f => f.targetPosition), 0);
+    // Calculate max position across all fields, regardless of current filter
+    const maxPosition = templateFields.length > 0 
+      ? Math.max(...templateFields.map(f => f.targetPosition), 0)
+      : 0;
     setNewField(prev => ({ ...prev, targetPosition: maxPosition + 1 }));
   };
 
@@ -196,8 +227,12 @@ const TemplateAdminPage: React.FC = () => {
         ? templateFields.filter((_, index) => index !== editingIndex)
         : templateFields;
       
-      if (existingFields.some(f => f.fieldName.toLowerCase() === field.fieldName.toLowerCase())) {
-        errors.push('Field name already exists');
+      // Only check for duplicates within the SAME transaction type
+      if (existingFields.some(f => 
+          f.fieldName.toLowerCase() === field.fieldName.toLowerCase() && 
+          f.transactionType === field.transactionType
+      )) {
+        errors.push(`Field name already exists in transaction type '${field.transactionType}'`);
       }
     }
     
@@ -209,8 +244,12 @@ const TemplateAdminPage: React.FC = () => {
         ? templateFields.filter((_, index) => index !== editingIndex)
         : templateFields;
       
-      if (existingFields.some(f => f.targetPosition === field.targetPosition)) {
-        errors.push('Position already exists');
+      // Only check for position conflicts within the SAME transaction type
+      if (existingFields.some(f => 
+          f.targetPosition === field.targetPosition && 
+          f.transactionType === field.transactionType
+      )) {
+        errors.push(`Position already exists in transaction type '${field.transactionType}'`);
       }
     }
     
@@ -264,15 +303,21 @@ const TemplateAdminPage: React.FC = () => {
         createdBy: 'admin'
       });
 
-      // Refresh the template fields from backend
-      await fetchTemplateFields(selectedFileType, selectedTransactionType);
+      // If the field was added with a different transaction type, switch to that transaction type
+      if (newField.transactionType && newField.transactionType !== selectedTransactionType) {
+        setSelectedTransactionType(newField.transactionType);
+        await fetchTemplateFields(selectedFileType, newField.transactionType);
+      } else {
+        // Refresh the template fields for current transaction type
+        await fetchTemplateFields(selectedFileType, selectedTransactionType);
+      }
       
       // Refresh transaction types to include any new ones
       await fetchTransactionTypes(selectedFileType);
       
       setAddFieldOpen(false);
       resetNewField();
-      setSuccessMessage('Field added successfully');
+      setSuccessMessage(`Field added successfully to ${newField.transactionType} transaction type`);
     } catch (error) {
       console.error('Failed to add field:', error);
       setError('Failed to add field');
@@ -282,6 +327,7 @@ const TemplateAdminPage: React.FC = () => {
   };
 
   const resetNewField = () => {
+    const defaultTransactionType = selectedTransactionType === 'ALL' ? 'default' : selectedTransactionType;
     setNewField({
       fieldName: '',
       targetPosition: Math.max(...templateFields.map(f => f.targetPosition), 0) + 1,
@@ -290,7 +336,7 @@ const TemplateAdminPage: React.FC = () => {
       format: '',
       required: 'N',
       description: '',
-      transactionType: selectedTransactionType
+      transactionType: defaultTransactionType
     });
   };
 
@@ -461,7 +507,11 @@ const TemplateAdminPage: React.FC = () => {
         setSuccessMessage(`Template saved successfully! ${fieldsToSave.length} fields processed.`);
         
         // Refresh the template fields from backend
-        await fetchTemplateFields(selectedFileType, selectedTransactionType);
+        if (selectedTransactionType === 'ALL') {
+          await fetchAllTemplateFields(selectedFileType);
+        } else {
+          await fetchTemplateFields(selectedFileType, selectedTransactionType);
+        }
       } catch (error) {
         console.error('Bulk save failed, trying individual field operations:', error);
         
@@ -492,7 +542,11 @@ const TemplateAdminPage: React.FC = () => {
         
         if (savedCount > 0) {
           setSuccessMessage(`Template saved! ${savedCount} fields saved, ${errorCount} errors.`);
-          await fetchTemplateFields(selectedFileType, selectedTransactionType);
+          if (selectedTransactionType === 'ALL') {
+            await fetchAllTemplateFields(selectedFileType);
+          } else {
+            await fetchTemplateFields(selectedFileType, selectedTransactionType);
+          }
         } else {
           setError('Failed to save any template fields');
         }
@@ -574,6 +628,9 @@ const TemplateAdminPage: React.FC = () => {
                   onChange={(e) => setSelectedTransactionType(e.target.value)}
                   label="Transaction Type"
                 >
+                  <MenuItem value="ALL">
+                    <em>All Transaction Types</em>
+                  </MenuItem>
                   {transactionTypes.map((type) => (
                     <MenuItem key={type} value={type}>
                       {type}
@@ -616,15 +673,6 @@ const TemplateAdminPage: React.FC = () => {
                     onChange={handleExcelImport}
                   />
                 </Button>
-                
-                <Button
-                  variant="outlined"
-                  startIcon={<SaveIcon />}
-                  onClick={handleSaveTemplate}
-                  disabled={!selectedFileType || templateFields.length === 0}
-                >
-                  Save Template
-                </Button>
               </Stack>
             </Grid>
           </Grid>
@@ -638,16 +686,37 @@ const TemplateAdminPage: React.FC = () => {
             <Typography variant="h6">
               Template Fields ({filteredFields.length})
             </Typography>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
+            <Box display="flex" alignItems="center" gap={2}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={showInactive}
+                    onChange={(e) => setShowInactive(e.target.checked)}
+                  />
+                }
+                label="Show inactive fields"
+              />
+              {selectedFileType && selectedTransactionType && (
+                <Chip 
+                  label={`Viewing: ${selectedFileType}/${selectedTransactionType}`}
+                  color="primary"
+                  variant="outlined"
+                  size="small"
                 />
-              }
-              label="Show inactive fields"
-            />
+              )}
+            </Box>
           </Box>
+          
+          {/* Debug Info */}
+          {process.env.NODE_ENV === 'development' && (
+            <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Typography variant="caption" display="block">
+                Debug: {templateFields.length} total fields in state | {filteredFields.length} filtered | 
+                Selected: {selectedFileType || 'none'}/{selectedTransactionType || 'none'} | 
+                Available transaction types: [{transactionTypes.join(', ')}]
+              </Typography>
+            </Box>
+          )}
         </Box>
 
         {selectedFileType ? (
