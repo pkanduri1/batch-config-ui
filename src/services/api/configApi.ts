@@ -112,7 +112,9 @@ export const configApi = {
             conditions: [],
             targetPosition: 1,
             dataType: 'string',
-            defaultValue: ''
+            defaultValue: '',
+            required: false,
+            expression: undefined
           },
           {
             id: 'field_2',
@@ -138,7 +140,9 @@ export const configApi = {
             }],
             targetPosition: 2,
             dataType: 'string',
-            defaultValue: '100020'
+            defaultValue: '100020',
+            required: false,
+            expression: undefined
           },
           {
             id: 'field_3',
@@ -162,7 +166,9 @@ export const configApi = {
             conditions: [],
             targetPosition: 3,
             dataType: 'string',
-            defaultValue: ''
+            defaultValue: '',
+            required: false,
+            expression: undefined
           }
         ],
         fields: {},

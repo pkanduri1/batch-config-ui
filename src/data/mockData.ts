@@ -118,42 +118,48 @@ export const mockConfiguration: Configuration = {
   jobName: 'p327',
   fieldMappings: [
     {
-      id: 'field_1',
-      fieldName: 'emp_id',
-      sourceField: 'employee_id',
-      targetField: 'EMPLOYEE_ID',
-      targetPosition: 1,
-      length: 10,
-      dataType: 'string',
-      transformationType: 'source',
-      transactionType: '200'
+        id: 'field_1',
+        fieldName: 'emp_id',
+        sourceField: 'employee_id',
+        targetField: 'EMPLOYEE_ID',
+        targetPosition: 1,
+        length: 10,
+        dataType: 'string',
+        transformationType: 'source',
+        transactionType: '200',
+        required: false,
+        expression: undefined
     },
     {
-      id: 'field_2',
-      fieldName: 'full_name',
-      targetField: 'FULL_NAME',
-      targetPosition: 2,
-      length: 50,
-      dataType: 'string',
-      transformationType: 'composite',
-      sources: [
-        { field: 'first_name' },
-        { field: 'last_name' }
-      ],
-      transform: 'concat',
-      delimiter: ' ',
-      transactionType: '200'
+        id: 'field_2',
+        fieldName: 'full_name',
+        targetField: 'FULL_NAME',
+        targetPosition: 2,
+        length: 50,
+        dataType: 'string',
+        transformationType: 'composite',
+        sources: [
+            { field: 'first_name' },
+            { field: 'last_name' }
+        ],
+        transform: 'concat',
+        delimiter: ' ',
+        transactionType: '200',
+        required: false,
+        expression: undefined
     },
     {
-      id: 'field_3',
-      fieldName: 'record_type',
-      targetField: 'RECORD_TYPE',
-      targetPosition: 3,
-      length: 3,
-      dataType: 'string',
-      transformationType: 'constant',
-      value: '200',
-      transactionType: '200'
+        id: 'field_3',
+        fieldName: 'record_type',
+        targetField: 'RECORD_TYPE',
+        targetPosition: 3,
+        length: 3,
+        dataType: 'string',
+        transformationType: 'constant',
+        value: '200',
+        transactionType: '200',
+        required: false,
+        expression: undefined
     }
   ],
   availableTransactionTypes: ['200', '900', 'default']

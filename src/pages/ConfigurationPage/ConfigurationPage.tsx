@@ -10,7 +10,7 @@ import {
   CircularProgress 
 } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import { useConfigurationContext, useSourceSystemsState } from '../../contexts/ConfigurationContext';
+import { useConfigurationContext } from '../../contexts/ConfigurationContext';
 import { SourceFieldList } from '../../components/configuration/SourceFieldList/SourceFieldList';
 import { MappingArea } from '../../components/configuration/MappingArea/MappingArea';
 import { FieldConfig } from '../../components/configuration/FieldConfig/FieldConfig';
@@ -87,14 +87,16 @@ const ConfigurationPage: React.FC = () => {
         
         // Create a new field mapping
         const newMapping: Omit<FieldMapping, 'id'> = {
-          fieldName: sourceField.name,
-          sourceField: sourceField.name,
-          targetField: sourceField.name,
-          targetPosition: fieldMappings.length + 1,
-          length: sourceField.maxLength || 10,
-          dataType: sourceField.dataType,
-          transformationType: 'source',
-          transactionType: 'default'
+            fieldName: sourceField.name,
+            sourceField: sourceField.name,
+            targetField: sourceField.name,
+            targetPosition: fieldMappings.length + 1,
+            length: sourceField.maxLength || 10,
+            dataType: sourceField.dataType,
+            transformationType: 'source',
+            transactionType: 'default',
+            required: false,
+            expression: undefined   
         };
         
         addFieldMapping(newMapping);

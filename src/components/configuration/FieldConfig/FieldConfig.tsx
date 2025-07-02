@@ -51,7 +51,9 @@ const FieldConfig: React.FC<FieldConfigProps> = ({
     targetPosition: 1,
     length: 10,
     dataType: 'string',
-    transformationType: 'source'
+    transformationType: 'source',
+    required: false,
+    expression: ''
   });
   const [isDirty, setIsDirty] = useState(false);
 

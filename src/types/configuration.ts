@@ -64,6 +64,8 @@ export interface TransformationTypeDefinition {
 }
 
 export interface FieldMapping {
+  required: boolean;
+  expression: any;
   id?: string; // Added for React list keys
   fieldName: string;
   sourceField?: string;

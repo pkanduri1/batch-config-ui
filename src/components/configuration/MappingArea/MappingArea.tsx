@@ -105,14 +105,16 @@ export const MappingArea: React.FC<MappingAreaProps> = ({ onMappingSelect }) => 
     }
 
     const newMapping: Omit<FieldMapping, 'id'> = {
-      fieldName: newMappingData.fieldName,
-      targetField: newMappingData.targetField,
-      sourceField: newMappingData.sourceField || undefined,
-      targetPosition: fieldMappings.length + 1,
-      length: newMappingData.length,
-      dataType: newMappingData.dataType,
-      transformationType: newMappingData.transformationType,
-      transactionType: 'default'
+        fieldName: newMappingData.fieldName,
+        targetField: newMappingData.targetField,
+        sourceField: newMappingData.sourceField || undefined,
+        targetPosition: fieldMappings.length + 1,
+        length: newMappingData.length,
+        dataType: newMappingData.dataType,
+        transformationType: newMappingData.transformationType,
+        transactionType: 'default',
+        required: false,
+        expression: undefined
     };
 
     console.log('Adding new mapping:', newMapping);
