@@ -26,7 +26,7 @@ const TOKEN_STORAGE_KEY = 'fabric_access_token';
 const REFRESH_TOKEN_STORAGE_KEY = 'fabric_refresh_token';
 
 const httpClient = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080',
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api',
   timeout: 30000, // Increased timeout for enterprise applications
   headers: {
     'Content-Type': 'application/json',

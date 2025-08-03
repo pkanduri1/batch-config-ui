@@ -9,7 +9,7 @@ import { ApiResponse } from '../../types/configuration';
 import { SourceField} from '../../types/configuration';
 
 
-const API_BASE_URL = 'http://localhost:8080/api/config'; // Update with your actual API base URL
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
 
 
 
@@ -56,7 +56,7 @@ export const configApi = {
   // Source Systems
   getSourceSystems: async (): Promise<SourceSystem[]> => {
     try {
-      const response = await axios.get<SourceSystem[]>(`${API_BASE_URL}/source-systems`);
+      const response = await axios.get<SourceSystem[]>(`${API_BASE_URL}/ui/source-systems`);
       return response.data;
     } catch (error) {
       console.error('Failed to fetch source systems:', error);
@@ -66,7 +66,7 @@ export const configApi = {
 
   getJobsForSourceSystem: async (sourceSystem: string): Promise<JobConfigResponse[]> => {
   try {
-    const response = await axios.get<JobConfigResponse[]>(`${API_BASE_URL}/source-systems/${sourceSystem}/jobs`);
+    const response = await axios.get<JobConfigResponse[]>(`${API_BASE_URL}/ui/source-systems/${sourceSystem}/jobs`);
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch jobs for ${sourceSystem}:`, error);
@@ -81,7 +81,7 @@ export const configApi = {
   // Field Mappings
   getFieldMappings: async (sourceSystem: string, jobName: string): Promise<Configuration[]> => {
     try {
-      const response = await axios.get<Configuration[]>(`${API_BASE_URL}/mappings/${sourceSystem}/${jobName}`);
+      const response = await axios.get<Configuration[]>(`${API_BASE_URL}/ui/mappings/${sourceSystem}/${jobName}`);
       return response.data;
     } catch (error) {
       console.warn('API failed, using mock configuration:', error);
@@ -181,7 +181,7 @@ export const configApi = {
 
   getSpecificMapping: async (sourceSystem: string, jobName: string, transactionType: string): Promise<Configuration> => {
     try {
-      const response = await axios.get<Configuration>(`${API_BASE_URL}/mappings/${sourceSystem}/${jobName}/${transactionType}`);
+      const response = await axios.get<Configuration>(`${API_BASE_URL}/ui/mappings/${sourceSystem}/${jobName}/${transactionType}`);
       return response.data;
     } catch (error) {
       console.error(`Failed to fetch mapping for ${sourceSystem}.${jobName}.${transactionType}:`, error);
@@ -191,7 +191,7 @@ export const configApi = {
 
   saveConfiguration: async (configuration: Configuration): Promise<ApiResponse<Configuration>> => {
     try {
-      const response = await axios.post<ApiResponse<Configuration>>(`${API_BASE_URL}/mappings/save`, configuration);
+      const response = await axios.post<ApiResponse<Configuration>>(`${API_BASE_URL}/ui/mappings/save`, configuration);
       return response.data;
     } catch (error) {
       console.error('Failed to save configuration:', error);
@@ -202,7 +202,7 @@ export const configApi = {
   // Validation
   validateMapping: async (mapping: Configuration): Promise<ValidationResult> => {
     try {
-      const response = await axios.post<ValidationResult>(`${API_BASE_URL}/mappings/validate`, mapping);
+      const response = await axios.post<ValidationResult>(`${API_BASE_URL}/ui/mappings/validate`, mapping);
       return response.data;
     } catch (error) {
       console.error('Failed to validate mapping:', error);
@@ -213,7 +213,7 @@ export const configApi = {
   // YAML Generation
   generateYaml: async (mapping: Configuration): Promise<{ yamlContent: string }> => {
     try {
-      const response = await axios.post<{ yamlContent: string }>(`${API_BASE_URL}/mappings/generate-yaml`, mapping);
+      const response = await axios.post<{ yamlContent: string }>(`${API_BASE_URL}/ui/mappings/generate-yaml`, mapping);
       return response.data;
     } catch (error) {
       console.error('Failed to generate YAML:', error);
@@ -224,7 +224,7 @@ export const configApi = {
   // Source Fields
   getSourceFields: async (sourceSystem: string): Promise<SourceField[]> => {
     try {
-      const response = await axios.get<SourceField[]>(`${API_BASE_URL}/source-systems/${sourceSystem}/fields`);
+      const response = await axios.get<SourceField[]>(`${API_BASE_URL}/ui/source-systems/${sourceSystem}/fields`);
       return response.data;
     } catch (error) {
       console.error(`Failed to fetch source fields for ${sourceSystem}:`, error);
@@ -235,7 +235,7 @@ export const configApi = {
   // Preview Output
   previewOutput: async (mapping: Configuration, sampleData?: Record<string, any>[]): Promise<{ preview: string[] }> => {
     try {
-      const response = await axios.post<{ preview: string[] }>(`${API_BASE_URL}/mappings/preview`, {
+      const response = await axios.post<{ preview: string[] }>(`${API_BASE_URL}/ui/mappings/preview`, {
         mapping,
         sampleData
       });
@@ -249,7 +249,7 @@ export const configApi = {
   // Test Configuration
   testConfiguration: async (sourceSystem: string, jobName: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const response = await axios.post<{ success: boolean; message: string }>(`${API_BASE_URL}/test/${sourceSystem}/${jobName}`);
+      const response = await axios.post<{ success: boolean; message: string }>(`${API_BASE_URL}/ui/test/${sourceSystem}/${jobName}`);
       return response.data;
     } catch (error) {
       console.error(`Failed to test configuration for ${sourceSystem}.${jobName}:`, error);
