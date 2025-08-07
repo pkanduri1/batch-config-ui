@@ -248,6 +248,16 @@ export interface ConfigurationState {
   typeRegistry?: TypeRegistry; // Add registry to state
 }
 
+export interface SQLLoaderState {
+  currentConfig: SQLLoaderConfig | null;
+  availableConfigs: SQLLoaderConfig[];
+  tableColumns: SQLLoaderColumn[];
+  validationResult: SQLLoaderValidationResult | null;
+  isLoading: boolean;
+  isDirty: boolean;
+  error: string | null;
+}
+
 export interface DropResult {
   source: {
     droppableId: string;
@@ -288,4 +298,111 @@ export interface TypeManagementOperations {
   
   // Get complete registry
   getTypeRegistry: () => Promise<TypeRegistry>;
+}
+
+// SQL*Loader specific types
+export interface SQLLoaderColumn {
+  id?: string;
+  columnName: string;
+  dataType: string;
+  maxLength?: number;
+  nullable: boolean;
+  defaultValue?: string;
+  description?: string;
+  position?: number;
+  
+  // SQL*Loader specific properties
+  terminated?: boolean;
+  enclosed?: boolean;
+  optionallyEnclosed?: boolean;
+  dateFormat?: string;
+  expression?: string;
+  
+  // Validation
+  required?: boolean;
+  validationRules?: string[];
+}
+
+export interface SQLLoaderControl {
+  load?: {
+    data?: string;
+    infile?: string;
+    badfile?: string;
+    discardfile?: string;
+    logfile?: string;
+    replace?: boolean;
+    append?: boolean;
+    truncate?: boolean;
+  };
+  options?: {
+    skip?: number;
+    errors?: number;
+    rows?: number;
+    bindsize?: number;
+    readsize?: number;
+    parallel?: boolean;
+    direct?: boolean;
+    unrecoverable?: boolean;
+  };
+  fields?: {
+    terminatedBy?: string;
+    enclosedBy?: string;
+    optionallyEnclosedBy?: string;
+    escapedBy?: string;
+    missingFieldValues?: string;
+    trailingNullCols?: boolean;
+  };
+}
+
+export interface SQLLoaderConfig {
+  id?: string;
+  sourceSystemId: string;
+  jobName: string;
+  tableName: string;
+  description?: string;
+  
+  // Control file configuration
+  control: SQLLoaderControl;
+  
+  // Column definitions
+  columns: SQLLoaderColumn[];
+  
+  // File settings
+  inputFilePattern?: string;
+  outputPath?: string;
+  archivePath?: string;
+  
+  // Execution settings
+  enabled: boolean;
+  schedule?: string;
+  
+  // Metadata
+  createdBy?: string;
+  createdDate?: string;
+  lastModified?: string;
+  version?: number;
+}
+
+export interface SQLLoaderValidationResult {
+  isValid: boolean;
+  errors: SQLLoaderValidationError[];
+  warnings: SQLLoaderValidationError[];
+  controlFilePreview?: string;
+}
+
+export interface SQLLoaderValidationError {
+  field: string;
+  message: string;
+  severity: 'error' | 'warning';
+  code?: string;
+}
+
+export interface SQLLoaderExecutionResult {
+  success: boolean;
+  recordsLoaded: number;
+  recordsRejected: number;
+  recordsDiscarded: number;
+  executionTime?: number;
+  logFile?: string;
+  errorMessage?: string;
 }

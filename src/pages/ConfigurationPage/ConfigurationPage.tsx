@@ -1,5 +1,5 @@
 // src/pages/ConfigurationPage/ConfigurationPage.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Box, 
   Typography, 
@@ -7,15 +7,19 @@ import {
   Paper, 
   Divider,
   Chip,
-  CircularProgress 
+  CircularProgress,
+  Tabs,
+  Tab
 } from '@mui/material';
 import { useParams } from 'react-router-dom';
 import { useConfigurationContext } from '../../contexts/ConfigurationContext';
 import { SourceFieldList } from '../../components/configuration/SourceFieldList/SourceFieldList';
 import { MappingArea } from '../../components/configuration/MappingArea/MappingArea';
 import { FieldConfig } from '../../components/configuration/FieldConfig/FieldConfig';
+import { SQLLoaderConfigurationPage } from '../../components/sqlloader/SQLLoaderConfigurationPage';
 import { DragDropContext, DropResult } from 'react-beautiful-dnd';
 import { FieldMapping } from '../../types/configuration';
+import { Settings, Storage } from '@mui/icons-material';
 
 const ConfigurationPage: React.FC = () => {
   const { systemId, jobName } = useParams();
@@ -42,6 +46,7 @@ const ConfigurationPage: React.FC = () => {
 //   } = useConfigurationContext();
   
   const [selectedMapping, setSelectedMapping] = React.useState<FieldMapping | null>(null);
+  const [activeTab, setActiveTab] = useState(0);
 
   // Load system and job on mount
   useEffect(() => {
@@ -112,6 +117,10 @@ const ConfigurationPage: React.FC = () => {
     }
   };
 
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -139,53 +148,80 @@ const ConfigurationPage: React.FC = () => {
   }
 
   return (
-    <DragDropContext onDragEnd={handleDragEnd}>
-      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="h5" gutterBottom>
-            {/* Configuration: {selectedSourceSystem.name} - {selectedJob.jobName} */}
-          </Typography>
-          
-<Box sx={{ display: 'flex', gap: 1 }}>
-  <span>{selectedSourceSystem.type || selectedSourceSystem.systemType || 'Unknown'}</span>
-  <span>{sourceFields.length} source fields</span>
-  <span>{fieldMappings.length} mappings</span>
-</Box>
-        </Box>
-
-        {/* 3-Panel Layout */}
-        <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {/* Left Panel - Source Fields */}
-          <Paper sx={{ width: '300px', display: 'flex', flexDirection: 'column' }}>
-            <SourceFieldList sourceFields={sourceFields} />
-          </Paper>
-
-          <Divider orientation="vertical" flexItem />
-
-          {/* Center Panel - Field Mappings */}
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <MappingArea onMappingSelect={setSelectedMapping} />
-          </Box>
-
-          <Divider orientation="vertical" flexItem />
-
-          {/* Right Panel - Field Configuration */}
-          <Paper sx={{ width: '400px', display: 'flex', flexDirection: 'column' }}>
-            <FieldConfig 
-              selectedMapping={selectedMapping}
-              onClose={() => setSelectedMapping(null)}
-              onSave={(mapping) => {
-                console.log('Saving mapping:', mapping);
-                // The save will be handled by the FieldConfig component
-                setSelectedMapping(null);
-              }}
-            />
-          </Paper>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Typography variant="h5" gutterBottom>
+          Configuration: {`${selectedSourceSystem?.name || 'Loading...'} - ${selectedJob || jobName || 'No Job'}`}
+        </Typography>
+        
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <span>{selectedSourceSystem?.type || selectedSourceSystem?.systemType || 'Unknown'}</span>
+          <span>{sourceFields.length} source fields</span>
+          <span>{fieldMappings.length} mappings</span>
         </Box>
       </Box>
-    </DragDropContext>
+
+      {/* Configuration Type Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={activeTab} onChange={handleTabChange}>
+          <Tab icon={<Settings />} label="Field Mapping" />
+          <Tab icon={<Storage />} label="SQL*Loader" />
+        </Tabs>
+      </Box>
+
+      {/* Tab Content */}
+      {activeTab === 0 && (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          {/* Field Mapping - Original 3-Panel Layout */}
+          <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+            {/* Left Panel - Source Fields */}
+            <Paper sx={{ width: '300px', display: 'flex', flexDirection: 'column' }}>
+              <SourceFieldList sourceFields={sourceFields} />
+            </Paper>
+
+            <Divider orientation="vertical" flexItem />
+
+            {/* Center Panel - Field Mappings */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <MappingArea onMappingSelect={setSelectedMapping} />
+            </Box>
+
+            <Divider orientation="vertical" flexItem />
+
+            {/* Right Panel - Field Configuration */}
+            <Paper sx={{ width: '400px', display: 'flex', flexDirection: 'column' }}>
+              <FieldConfig 
+                selectedMapping={selectedMapping}
+                onClose={() => setSelectedMapping(null)}
+                onSave={(mapping) => {
+                  console.log('Saving mapping:', mapping);
+                  // The save will be handled by the FieldConfig component
+                  setSelectedMapping(null);
+                }}
+              />
+            </Paper>
+          </Box>
+        </DragDropContext>
+      )}
+
+      {activeTab === 1 && (
+        <SQLLoaderConfigurationPage />
+      )}
+    </Box>
   );
 };
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
+  <div role="tabpanel" hidden={value !== index}>
+    {value === index && <Box sx={{ height: '100%' }}>{children}</Box>}
+  </div>
+);
 
 export default ConfigurationPage;

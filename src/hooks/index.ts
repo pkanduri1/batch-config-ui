@@ -14,3 +14,6 @@ export type { UseTypeRegistryReturn } from './useTypeRegistry';
 
 export { useTemplate } from './useTemplate';
 export type { UseTemplateReturn } from './useTemplate';
+
+export { useSQLLoaderConfiguration } from './useSQLLoaderConfiguration';
+export type { UseSQLLoaderConfigurationReturn } from './useSQLLoaderConfiguration';

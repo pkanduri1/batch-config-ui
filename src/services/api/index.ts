@@ -12,3 +12,12 @@ axios.interceptors.request.use(config => {
   }
   return config;
 });
+
+// Export all API modules
+export * from './configApi';
+export * from './authApi';
+export * from './sourceSystemApi';
+export * from './templateApi';
+export * from './templateSourceMappingApi';
+export * from './typeRegistryApi';
+export * from './sqlLoaderApi';
